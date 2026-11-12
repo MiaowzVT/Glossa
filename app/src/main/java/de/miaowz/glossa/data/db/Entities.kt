@@ -1,0 +1,98 @@
+package de.miaowz.glossa.data.db
+
+import androidx.room.ColumnInfo
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import androidx.room.Relation
+
+@Entity(
+    tableName = "languages",
+    indices = [Index(value = ["name"], unique = true)],
+)
+data class LanguageEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(collate = ColumnInfo.NOCASE) val name: String,
+)
+
+/** A sub-category inside a language, e.g. "Particles" in Japanese. */
+@Entity(
+    tableName = "categories",
+    foreignKeys = [
+        ForeignKey(
+            entity = LanguageEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["languageId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["languageId", "name"], unique = true)],
+)
+data class CategoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val languageId: Long,
+    @ColumnInfo(collate = ColumnInfo.NOCASE) val name: String,
+)
+
+/** Rich text columns hold [de.miaowz.glossa.richtext.RichText] JSON. */
+@Entity(
+    tableName = "grammar_entries",
+    foreignKeys = [
+        ForeignKey(
+            entity = LanguageEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["languageId"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
+        ForeignKey(
+            entity = CategoryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["categoryId"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index("languageId"), Index("categoryId")],
+)
+data class GrammarEntryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val description: String,
+    /** Description without formatting and ruby readings, for search. */
+    val descriptionPlain: String,
+    val languageId: Long,
+    val categoryId: Long?,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+@Entity(
+    tableName = "example_sentences",
+    foreignKeys = [
+        ForeignKey(
+            entity = GrammarEntryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["entryId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("entryId")],
+)
+data class ExampleSentenceEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val entryId: Long,
+    val position: Int,
+    val sentence: String,
+    val translation: String,
+)
+
+data class GrammarEntryWithDetails(
+    @Embedded val entry: GrammarEntryEntity,
+    @Relation(parentColumn = "languageId", entityColumn = "id")
+    val language: LanguageEntity,
+    @Relation(parentColumn = "categoryId", entityColumn = "id")
+    val category: CategoryEntity?,
+    @Relation(parentColumn = "id", entityColumn = "entryId")
+    val examples: List<ExampleSentenceEntity>,
+)

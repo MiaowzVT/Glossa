@@ -1,0 +1,298 @@
+Glossa – Conversation log (2026-10-30)
+=====================================
+
+Contents: your prompts and my written replies only. Tool calls, command
+output and screenshots are left out.
+
+
+-------------------------------------------------------------------------
+USER
+-------------------------------------------------------------------------
+The workspace you're in right now is the scaffolding for an Android App. Our
+goal is to create a full Android App out of this scaffolding. For this, we
+first want to implement one of many features: A "Grammar Library" - The user
+should be able to create new Grammar Entries for their Library by pressing a
+"+" button in the application's view. That will send them to another view,
+where they can create a short title, a detailed description and example
+sentences. For the implementation, we will also need support for
+RubyTextView, so the user can use for example Furigana when creating the
+Grammar Entries. I also want a Rich Text Editor for this view, so that the
+user can work with Colors, Text Edits (e.g. Bold, Italic, Underline) etc..
+Finally, each grammar entry should be able to be categorized by a Language
+and a Sub-Category inside the Language.
+
+
+-------------------------------------------------------------------------
+ASSISTANT (progress notes during the work)
+-------------------------------------------------------------------------
+I'll start by looking at the scaffolding.
+
+The scaffold is a fresh Compose app (AGP 9.4.1, built-in Kotlin 2.2.10,
+minSdk 35). Before choosing dependencies, I'll check whether Gradle can build
+and reach the network.
+
+Build works and the network is reachable. I'll confirm the exact versions to
+pin.
+
+Everything resolves. My plan, with the main design decisions:
+- Persistence: Room (via KSP) with Language -> Category -> GrammarEntry ->
+  ExampleSentence tables.
+- Rich text: a native EditText-based editor wrapped in Compose. Formatting is
+  stored as a lossless JSON RichText model (text + spans). I'm avoiding
+  Html.toHtml/fromHtml because a round trip through them adds stray newlines.
+- Ruby/Furigana: inline markup {漢字|かんじ} that you can type or insert from
+  the toolbar. A custom RubySpan (a ReplacementSpan) inside a RubyTextView
+  draws the reading above the base text and keeps the base text's colour and
+  styles.
+- Navigation: type-safe Navigation Compose with Library, Detail and Editor
+  screens.
+
+Setting up Gradle first.
+
+Checking that the plugin combination (KSP + built-in Kotlin in AGP 9)
+resolves before writing code.
+
+The toolchain works. Next is the core model: rich text and ruby markup. These
+are pure Kotlin so they can be unit-tested.
+
+Next, the Android span layer: marker span classes so that IME composing
+underlines or pasted spans never get saved by accident, and the span
+operations (apply, remove, merge, query).
+
+Fixing an edge case in formatsIn: getSpans also returns spans that only touch
+the range, so the wrong colour could be reported for a selection.
+
+Now the ruby rendering. RubySpan draws the reading above the base text. When
+the span is attached, every style overlapping the {…} markup is lifted off
+the text and handed to the span. Without that, TextLine would split the
+replacement run and drop the colour and underline.
+
+Now the Compose wrapper for display, and the editor view.
+
+The insertRuby I just wrote calls replace() on the selection, which would
+wipe that text's formatting. Fixing it.
+
+Now the data layer (Room).
+
+Now the Compose side of the rich text editor: a state holder, a bordered
+field, a formatting toolbar and the furigana dialog.
+
+I left a stub (AttachView) in that file and never registered the view on the
+state. Fixing both.
+
+Next, the formatting toolbar and the furigana dialog.
+
+The furigana dialog shouldn't trim the selected text: trimming makes the
+base differ from the selection, which breaks the formatting-preserving wrap
+path.
+
+Now the Library screen with its "+" button, language/category filters and
+search.
+
+Detail screen.
+
+Now the editor, the core of the feature. ViewModel first.
+
+A small fix: category options only depend on the selected language, so they
+shouldn't recompute on every keystroke.
+
+Now the category pickers and the editor screen.
+
+Registering the Application class in the manifest, tidying an inline FQN,
+then compiling.
+
+It compiled on the first pass. I'll check the warnings for deprecations I
+should address.
+
+Now tests. JVM unit tests cover the markup parser and the storage codec.
+Instrumented tests cover the span logic, ruby rendering and Room, since
+those need real Android classes.
+
+Fixing an out-of-bounds span in one test (the string is 10 characters, not
+11). Then I'll run the unit tests and start the emulator in the background.
+
+The codec is right; the test was wrong. The text is 24 characters, so the
+span ending at 25 was correctly dropped as out of bounds. Fixing the test
+data.
+
+All 8 unit tests pass and the emulator is up. Running the instrumented tests
+once it finishes booting.
+
+All 12 instrumented tests pass (span ops, ruby span, Room repository). Tests
+don't show what the UI looks like, though, so I'll install the app and walk
+through the flow on the emulator.
+
+Still on the splash screen (first launch on a cold emulator). Waiting a bit
+longer.
+
+The library screen and its empty state render correctly. I'll tap "+" to
+open the editor.
+
+The editor layout is right, with one flaw: the description placeholder is
+vertically centred where it should be top-aligned. I'll fix that after this
+pass. Next I'll type into the description with ruby markup and check the
+toolbar appears.
+
+The formatting toolbar appears above the keyboard as intended. The stray
+backslashes are from my shell quoting, not the app. I'll clear the field,
+retype, then double-tap "bold" to select it and apply Bold and a colour.
+
+Shell escaping of { and | through adb input is unreliable, so I'll test
+furigana through the app's own ふ button instead, which exercises the real
+feature anyway. Typing plain text, then selecting "word".
+
+Double-tapping "bold" to select it.
+
+"bold" is selected. Tapping B, then opening the text colour panel.
+
+Bold is applied and the B button shows as active. Picking red, then
+double-tapping "word" and opening the furigana dialog.
+
+The dialog opened with the selected "word" prefilled. Typing a reading to
+check the live preview.
+
+The ruby rendering works: the reading is drawn centred above the base text.
+Tapping Add, then Preview.
+
+Two findings from this pass:
+1. Bug: the red colour didn't apply to "bold". After tapping B, the
+   selection collapsed to a cursor, so the colour only became a "typing
+   format" for new text. I'll add a temporary stack-trace log to
+   onSelectionChanged to find the actual cause.
+2. Minor: the keyboard stays open in Preview mode, and the description
+   placeholder isn't top-aligned.
+The ruby wrap itself worked: "word" became {word|reading}, Bold survived,
+and the preview renders it correctly.
+
+The app was still on the previous screen, so the taps landed in the wrong
+places. Clearing the app data and repeating from a clean state.
+
+Found the root cause. The AndroidView update block calls setHint() on every
+recomposition. TextView.setHint -> checkForRelayout -> nullLayouts ->
+stopTextActionMode, which collapses the selection. Every formatting action
+triggered a recomposition and so lost the selection.
+The fix is to set view properties only when they actually change. I'm also
+removing the debug log, fixing the placeholder gravity, and hiding the
+keyboard in Preview mode.
+
+Rerunning the same scenario: select "bold" -> B -> red. Then I'll select
+"word" -> ふ -> "reading" -> Add, and check the selection survives each
+step.
+
+The placeholder gravity is fixed. Now select "bold" -> B -> red.
+
+Fixed: the selection survives both actions, "bold" is bold and red, and the
+colour indicator under the A button turns red. Next I'll underline "word"
+and then add furigana to it, which checks that styles carry into the ruby
+rendering.
+
+Formatting is preserved inside the ruby markup (underline and red on
+"word"). Now I'll fill in the title and create a language via the picker.
+
+Language and category were created and selected. Adding an example sentence
+and saving.
+
+The entry saved and the detail screen renders everything correctly:
+furigana, the red underlined base text (the reading inherits the red), red
+bold "bold", the language and category chips, and the example.
+One more polish issue: the keyboard stays open after leaving the editor.
+I'll hide it whenever the editor closes, then check the library and the
+edit round trip.
+
+The install kept the data. Opening the library, then the entry's editor, to
+verify the saved spans load back correctly.
+
+Data persists across an app restart, and the library card renders the
+furigana and formatting. The card title "Topic marker" looks greyer than
+expected, though. I'll sample the pixels to check.
+
+PIL isn't available, so I'll read the raw framebuffer instead.
+
+Both the title and the description render at the same lighter colour
+(93,95,104). The title should be the darker onSurface. For comparison, I'll
+sample the title on the detail screen.
+
+The detail screen renders correctly (48,50,59 = onSurface). So inside the
+library card, the LocalContentColor the title inherits is the lighter
+variant. I'll set the card title colour explicitly rather than rely on the
+inherited content colour.
+
+The card title is now the correct colour. Last check, the edit round trip:
+open the entry in the editor and confirm the saved formatting and ruby
+markup load back.
+
+The round trip works: title, language, category, the description's
+formatting and ruby markup, and the example all load back exactly. A final
+run of the full test suite after the fixes.
+
+
+-------------------------------------------------------------------------
+ASSISTANT (final summary)
+-------------------------------------------------------------------------
+The Grammar Library feature works end to end. I ran it on the emulator:
+created an entry with a language, category, formatting, furigana and an
+example, saved it, restarted the app and reopened it in the editor, and
+everything came back intact. All 8 unit tests and 12 instrumented tests
+pass.
+
+What you get
+- Library screen: your entries grouped by language, with a "+" button,
+  filter chips for language and sub-category, and search. Search also
+  matches furigana readings, so "かんじ" finds 漢字.
+- Editor screen:
+  - A short title.
+  - Language and sub-category pickers. You can create a new language or
+    category straight from the dropdown ("New language…").
+  - A rich text description.
+  - Any number of example sentences, each with an optional translation.
+  - A preview mode, and a warning before you discard unsaved changes.
+- Detail screen: opens when you tap an entry, with edit and delete (delete
+  asks first).
+- Rich text editing: bold, italic, underline, strikethrough, 8 text colours,
+  6 highlight colours, text size and "clear formatting". With nothing
+  selected, a format applies to whatever you type next.
+- Furigana: select text and tap ふ, enter the reading (the dialog shows a
+  live preview), or type {漢字|かんじ} directly. While editing you see the
+  markup; everywhere else it's drawn as a real reading above the text, in
+  the base text's colour and styles. The title field has its own ふ button.
+
+Decisions worth knowing
+- No third-party editor library. I built the editor on Android's own text
+  field, and RubyTextView is a custom view rather than a library. That's
+  what let the furigana keep the formatting of the text under it.
+- Furigana is stored as {base|reading} text, so it survives copy/paste and
+  works in any field. If only part of a word is formatted, the whole word
+  gets that style once furigana is added.
+- Language is required, category is optional. New entries default to the
+  language you used last.
+- Paste is plain text only, so formatting the app can't store never appears
+  on screen.
+
+Bugs I found and fixed during the emulator run
+- Applying a format cleared the text selection, so you couldn't apply bold
+  and then a colour to the same text. Updating the field's placeholder on
+  every redraw was ending the selection.
+- The keyboard stayed open after saving or switching to preview.
+- Library card titles were drawn in a lighter grey than intended.
+- The description placeholder sat in the middle of the box instead of at the
+  top.
+
+Not done yet: renaming or deleting languages and categories, undo/redo, and
+keeping a half-written entry if Android closes the app in the background (it
+survives screen rotation).
+
+Project changes: I added Room, KSP, Navigation, Material icons and
+kotlinx-serialization to the Gradle files. The database schema is exported
+to app/schemas/ and should be committed so future database upgrades can be
+written. I replaced the two template example tests and didn't touch app/LOGBOOK.MD,
+since that's your log.
+
+The main pieces are in richtext/ (the editor), ruby/ (furigana rendering),
+data/ (Room database) and ui/ (the three screens).
+
+
+-------------------------------------------------------------------------
+USER
+-------------------------------------------------------------------------
+Dump both my prompt and your answers into a text file for me to review
+later. Do not add anything you are not allowed to.
