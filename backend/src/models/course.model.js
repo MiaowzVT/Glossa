@@ -38,8 +38,8 @@ const Course = {
 
     async create({ course_name, course_description, course_level, course_language }) {
         const [result] = await db.query(
-            'INSERT INTO official_course (course_name, course_description, course_level, course_language) VALUES (?, ?, ?, ?)',
-            [course_name, course_description, course_level, course_language]
+            'INSERT INTO official_course (course_name, course_description, course_level, course_language, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+            [course_name, course_description, course_level, course_language, new Date(), new Date()]
         );
 
         return this.findById(result.insertId);
@@ -47,8 +47,8 @@ const Course = {
 
     async update(id, { course_name, course_description, course_level, course_language }) {
         const [result] = await db.query(
-            'UPDATE official_course SET course_name = ?, course_description = ?, course_level = ?, course_language = ?',
-            [course_name, course_description, course_level, course_language]
+            'UPDATE official_course SET course_name = ?, course_description = ?, course_level = ?, course_language = ?, updated_at = ? WHERE id = ?',
+            [course_name, course_description, course_level, course_language, new Date()]
         );
 
         return result.affectedRows > 0 ? this.findById(id) : null;

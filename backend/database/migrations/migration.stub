@@ -1,0 +1,14 @@
+// database/migration.stub
+/**
+ * @param { import("knex").Knex } knex
+ */
+export async function up(knex) {
+  await knex.raw(``);
+}
+
+/**
+ * @param { import("knex").Knex } knex
+ */
+export async function down(knex) {
+  await knex.raw(``);
+}
