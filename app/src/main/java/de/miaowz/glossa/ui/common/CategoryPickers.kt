@@ -1,4 +1,4 @@
-package de.miaowz.glossa.ui.editor
+package de.miaowz.glossa.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +29,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.data.model.Category
+import de.miaowz.glossa.data.model.Language
+
+data class CategoryOptions(
+    val languages: List<Language> = emptyList(),
+    /** Categories of the selected language. */
+    val categories: List<Category> = emptyList(),
+)
 
 /** Language and sub-category selection, with inline creation of new ones. */
 @Composable

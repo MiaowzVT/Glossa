@@ -31,7 +31,7 @@ class GrammarRepositoryTest {
             ApplicationProvider.getApplicationContext(),
             GlossaDatabase::class.java,
         ).build()
-        repository = GrammarRepository(database.grammarDao(), clock = { now })
+        repository = GrammarRepository(database.grammarDao(), database.taxonomyDao(), clock = { now })
     }
 
     @After

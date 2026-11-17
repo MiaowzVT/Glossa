@@ -1,8 +1,10 @@
 # Glossa — Architecture
 
-Glossa is a single-module Android app for building a personal **grammar library** for language
-learning. Entries have a title, a rich-text description and example sentences, are categorized by
-**Language → Category**, and support **furigana** (ruby text) everywhere.
+Glossa is a single-module Android app for building a personal **grammar library** and
+**vocabulary library** for language learning. Grammar entries have a title, a rich-text description
+and example sentences; vocabulary entries have a term, a meaning, rich-text notes and example
+sentences. Both are categorized by **Language → Category** and support **furigana** (ruby text)
+everywhere. A bottom navigation bar switches between Home, Grammar and Vocabulary.
 
 This document is the working reference for extending the code base. It describes the layers, the
 data formats that must stay stable, the invariants each component relies on, and step-by-step
@@ -34,15 +36,15 @@ Package / application id: `de.miaowz.glossa`.
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ ui/                     Compose screens + ViewModels (one package/feature)│
-│   navigation/           NavHost + @Serializable routes                    │
-│   library/ detail/ editor/   theme/                                        │
+│   navigation/           NavHost, bottom bar, @Serializable routes         │
+│   home/ grammar/ vocabulary/   common/ (shared UI)   theme/                │
 ├───────────────────────────────┬──────────────────────────────────────────┤
 │ richtext/   (reusable widget) │ ruby/     (reusable widget)               │
 │ RichText model, editor View,  │ {base|reading} markup, RubySpan,          │
 │ toolbar, span operations      │ RubyTextView, RubyText, FuriganaDialog    │
 ├───────────────────────────────┴──────────────────────────────────────────┤
-│ data/                   GrammarRepository  ←→  data/model (domain types)  │
-│   db/                   Room: entities, DAO, database                     │
+│ data/        GrammarRepository, VocabularyRepository (+ Taxonomy)  ←→ model│
+│   db/                   Room: entities, DAOs, database                    │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -55,8 +57,9 @@ Dependency rules (keep these when adding code):
 - `richtext` and `ruby` are feature-agnostic widgets. They know nothing about grammar entries.
   `richtext` uses `ruby.RubyMarkup` (for `insertRuby`), `ruby` uses `richtext.RichText`
   (for rendering). That mutual dependency is intentional and limited to these two packages.
-- Feature packages under `ui/` don't import each other's screens; they communicate only via
-  navigation callbacks.
+- Feature packages under `ui/` (`home`, `grammar`, `vocabulary`) don't import each other; they
+  communicate only via navigation callbacks. Code shared between features lives in `ui/common/`,
+  which must not import feature packages.
 
 ---
 
@@ -64,9 +67,9 @@ Dependency rules (keep these when adding code):
 
 | File | Role |
 |------|------|
-| `GlossaApplication.kt` | Manual dependency container. Holds `grammarRepository` as a `lazy` (so tests/previews don't open the DB). |
+| `GlossaApplication.kt` | Manual dependency container. Holds one `database` and `grammarRepository` / `vocabularyRepository`, all `lazy` (so tests/previews don't open the DB). |
 | `MainActivity.kt` | `enableEdgeToEdge()`, `GlossaTheme { GlossaNavHost() }`. `windowSoftInputMode="adjustResize"` in the manifest. |
-| `ui/GlossaViewModelFactory.kt` | `CreationExtras.grammarRepository` extension — the *only* bridge from ViewModels to the container. |
+| `ui/GlossaViewModelFactory.kt` | `CreationExtras.grammarRepository` / `.vocabularyRepository` extensions — the *only* bridge from ViewModels to the container. |
 
 ViewModels are created inline in the screen's default parameter:
 
@@ -84,7 +87,7 @@ without a deliberate decision — the pattern is meant to stay this small.
 
 ## 4. Data layer
 
-### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **1**, file `glossa.db`)
+### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **2**, file `glossa.db`)
 
 ```
 languages            categories                    grammar_entries                     example_sentences
@@ -92,35 +95,57 @@ languages            categories                    grammar_entries              
 id PK                id PK                         id PK                               id PK
 name NOCASE UNIQUE   languageId FK→languages       title          (String, ruby markup) entryId FK→grammar_entries
                        ON DELETE CASCADE           description    (RichText JSON)        ON DELETE CASCADE
-                     name NOCASE                   descriptionPlain (search text)      position
-                     UNIQUE(languageId, name)      languageId FK  ON DELETE RESTRICT   sentence     (RichText JSON)
-                                                   categoryId? FK ON DELETE SET_NULL   translation  (RichText JSON)
+                     type (CategoryType,           descriptionPlain (search text)      position
+                       default 'GRAMMAR')          languageId FK  ON DELETE RESTRICT   sentence     (RichText JSON)
+                     name NOCASE                   categoryId? FK ON DELETE SET_NULL   translation  (RichText JSON)
+                     UNIQUE(languageId,type,name)  createdAt, updatedAt (epoch ms)
+
+                                                   vocabulary_entries                  vocabulary_examples
+                                                   ──────────────────                  ───────────────────
+                                                   id PK                               id PK
+                                                   term     (String, ruby markup)      entryId FK→vocabulary_entries
+                                                   meaning  (String, ruby markup, "")    ON DELETE CASCADE
+                                                   notes    (RichText JSON)            position
+                                                   notesPlain (search text)            sentence     (RichText JSON)
+                                                   languageId FK  ON DELETE RESTRICT   translation  (RichText JSON)
+                                                   categoryId? FK ON DELETE SET_NULL
                                                    createdAt, updatedAt (epoch ms)
 ```
 
-- `GrammarEntryWithDetails` is the `@Relation` aggregate (entry + language + category + examples)
-  returned by all entry queries; those queries are `@Transaction`.
+- **Languages are shared** by both libraries; **categories are scoped per library** by
+  `CategoryType` (`GRAMMAR`, `VOCABULARY`; stored by enum name — never rename the constants).
+  A grammar "Verbs" and a vocabulary "Verbs" are different rows.
+- `GrammarEntryWithDetails` / `VocabularyEntryWithDetails` are the `@Relation` aggregates
+  (entry + language + category + examples) returned by all entry queries; those queries are
+  `@Transaction`.
 - Names are unique **case-insensitively** (`COLLATE NOCASE`) — `getOrCreate*` relies on this.
 - Deleting a language with entries fails (`RESTRICT`); deleting a category nulls the entries'
   `categoryId`. There is currently no UI to delete languages/categories.
 
-### 4.2 DAO (`data/db/GrammarDao.kt`)
+### 4.2 DAOs (`data/db/`)
 
-- Observations return `Flow` (`observeLanguages`, `observeCategories`, `observeEntries`,
-  `observeEntry`); one-shot reads/writes are `suspend`.
+- `TaxonomyDao`: languages and categories; category queries take a `CategoryType`.
+- `GrammarDao` / `VocabularyDao`: same shape. Observations return `Flow` (`observeEntries`,
+  `observeEntry`, `observeCount`); one-shot reads/writes are `suspend`.
 - `saveEntry(entry, examples)` is the single write path for entries: insert-or-update the entry,
   **delete all its examples and re-insert** them with `position = index`. Examples have no stable
   identity across saves.
 
-### 4.3 Repository (`data/GrammarRepository.kt`)
+### 4.3 Repositories (`data/`)
 
-The only public API of the data layer. Responsibilities:
+The only public API of the data layer: `GrammarRepository` and `VocabularyRepository`, which share
+their structure. Responsibilities:
 
-- Maps entities ⇄ domain models (`data/model/Grammar.kt`) via private `toModel()` extensions.
-- Encodes/decodes `RichText` columns (`RichText.encode()` / `RichText.decode()`).
-- `save(draft: GrammarEntryDraft)`: trims the title, preserves `createdAt` on update, sets
-  `updatedAt = clock()`, computes `descriptionPlain`, and **drops examples where both sentence and
-  translation are blank**.
+- Both implement `Taxonomy` (`data/Taxonomy.kt`: `languages`, `categories`,
+  `getOrCreateLanguage`, `getOrCreateCategory`) by delegating to `RoomTaxonomy` with their
+  `CategoryType`, so `categories` and `getOrCreateCategory` only see their own library.
+- Map entities ⇄ domain models via private `toModel()` extensions (`Language`/`Category` mappers
+  are `internal` in `Taxonomy.kt`).
+- Encode/decode `RichText` columns (`RichText.encode()` / `RichText.decode()`).
+- `save(draft)`: trims title/term (and meaning), preserves `createdAt` on update, sets
+  `updatedAt = clock()`, computes the `*Plain` search column, and **drops examples where both
+  sentence and translation are blank**.
+- `entryCount: Flow<Int>` for the home screen.
 - `getOrCreateLanguage(name)` / `getOrCreateCategory(languageId, name)`: trimmed, case-insensitive
   reuse.
 - `clock` is injectable for tests.
@@ -129,7 +154,8 @@ The only public API of the data layer. Responsibilities:
 
 `Language`, `Category` (has `languageId`), `ExampleSentence(sentence: RichText, translation: RichText)`,
 `GrammarEntry` (read model, with resolved `language`/`category`), `GrammarEntryDraft` (write model,
-ids only; `id = 0` means new).
+ids only; `id = 0` means new). `data/model/Vocabulary.kt`: `VocabularyEntry` / `VocabularyEntryDraft`
+with the same conventions (`meaning` is `""` when not set).
 
 ### 4.5 Migrations
 
@@ -141,6 +167,11 @@ entity:
    `fallbackToDestructiveMigration`, so a missing migration crashes on upgrade.
 3. Build once so `app/schemas/de.miaowz.glossa.data.db.GlossaDatabase/<version>.json` is
    generated, and commit it.
+
+History: `1 → 2` is an `@AutoMigration` (new vocabulary tables; `categories` gets `type` with
+default `'GRAMMAR'` and a new unique index, which Room does by rebuilding the table). Room enables
+`PRAGMA foreign_keys` only in `onOpen`, after migrations, so table rebuilds don't fire
+`ON DELETE` actions.
 
 ---
 
@@ -158,7 +189,8 @@ backwards-compatible decoder.
 - Neither part may contain `{`, `}` or `|`, and neither may be blank
   (`RubyMarkup.isValidPart`). Malformed markup is rendered as literal text.
 - Furigana is **inline text, not a span**: it survives copy/paste, plain-text fields and search.
-- Used in: entry titles (plain `String`), and inside the `text` of every `RichText`.
+- Used in: grammar titles, vocabulary terms and meanings (plain `String`), and inside the `text` of
+  every `RichText`.
 - `stripToBase(text)` removes readings — use it for sorting, search and plain-text previews.
 
 ### 5.2 RichText — `richtext/RichText.kt`
@@ -217,7 +249,7 @@ Key invariants:
   (no-op on echo).
 
 Multiple fields + one toolbar: each `RichTextField` gets its own `RichTextEditorState`. The screen
-tracks them in a `SnapshotStateList` (`rememberRegisteredEditor` in `GrammarEditorScreen.kt`) and
+tracks them in a `SnapshotStateList` (`rememberRegisteredEditor` in `ui/common/Examples.kt`) and
 shows `RichTextToolbar` for the one with `isFocused`.
 
 ---
@@ -252,15 +284,27 @@ Notes:
 
 | Route | Screen | Args |
 |-------|--------|------|
-| `LibraryRoute` (start) | `GrammarLibraryScreen` | — |
-| `EntryDetailRoute(entryId)` | `GrammarDetailScreen` | entry id |
-| `EntryEditorRoute(entryId = 0)` | `GrammarEditorScreen` | `0` = create new |
+| `HomeRoute` (start, tab) | `HomeScreen` | — |
+| `GrammarLibraryRoute` (tab) | `GrammarLibraryScreen` | — |
+| `GrammarDetailRoute(entryId)` | `GrammarDetailScreen` | entry id |
+| `GrammarEditorRoute(entryId = 0)` | `GrammarEditorScreen` | `0` = create new |
+| `VocabularyLibraryRoute` (tab) | `VocabularyLibraryScreen` | — |
+| `VocabularyDetailRoute(entryId)` | `VocabularyDetailScreen` | entry id |
+| `VocabularyEditorRoute(entryId = 0)` | `VocabularyEditorScreen` | `0` = create new |
 
+- **Bottom navigation:** `GlossaNavHost` wraps the `NavHost` in an outer `Scaffold` whose
+  `NavigationBar` lists `TopLevelDestination` (Home, Grammar, Vocabulary). The bar is shown only
+  while a top-level route is current; detail and editor screens are full-screen.
+  Tab switches use `popUpTo(start) { saveState = true }` + `launchSingleTop` + `restoreState`, so
+  each tab keeps its state (scroll, filters).
+- Insets: the outer `Scaffold` uses `contentWindowInsets = WindowInsets(0)` and the `NavHost` gets
+  `padding(padding).consumeWindowInsets(padding)` — screens keep handling the status bar
+  themselves, and their bottom inset is consumed by the bar when it is visible.
 - Screens receive navigation as lambdas (`onAddEntry`, `onOpenEntry`, `onEdit`, `onBack`,
   `onSaved`); they never get the `NavController`.
 - ViewModels read args with `savedStateHandle.toRoute<XRoute>()`.
 - After saving a **new** entry, the editor is replaced by its detail screen
-  (`popUpTo<EntryEditorRoute> { inclusive = true }`); after editing, it just pops.
+  (`popUpTo<XEditorRoute> { inclusive = true }`); after editing, it just pops.
 
 ### 8.2 Screen / ViewModel pattern
 
@@ -276,30 +320,45 @@ Every feature package contains `XScreen.kt` and (unless trivial) `XViewModel.kt`
 - Validation errors are computed properties gated by `showErrors` (set on first failed save).
 - Screen-local, transient UI state (dialogs open, preview toggle) lives in `rememberSaveable` in the
   composable, not the ViewModel.
-- Private sub-composables live in the same file as the screen; reusable pieces get their own file
-  in the feature package (e.g. `editor/CategoryPickers.kt`).
+- Private sub-composables live in the same file as the screen. Pieces used by more than one
+  feature live in `ui/common/`:
+  - `Library.kt` — `LibraryFilter`, generic `LibraryUiState<T>`, `LibraryKeys<T>` and the pure
+    `libraryState(entries, filter, keys)` that filters, searches and groups (JVM-tested).
+  - `LibraryList.kt` — generic `LibraryList<T>` body (loading, empty, search, chips, language
+    sections) and `EmptyLibrary`.
+  - `CategoryPickers.kt` — `CategoryOptions` + language/category pickers with inline creation.
+  - `Examples.kt` — `ExampleDraft`, `SavedEntry`, `rememberRegisteredEditor`, `ExampleEditor`,
+    read-only `ExamplesSection`, `TextFieldValue.replaceSelection` / `selectedText`.
 
 ### 8.3 Screens
 
-**Library** (`ui/library/`) — `GrammarLibraryViewModel` combines `repository.entries` with a
-`LibraryFilter(languageId, categoryId, query)`. All filtering, grouping (sections per language,
-sorted case-insensitively; entries by category then stripped title) and search happen **in memory**.
-Search matches raw text (so readings match) and `stripToBase` text. A language filter whose last
-entry disappeared is dropped automatically. FAB → editor.
+**Home** (`ui/home/HomeScreen.kt`, `HomeViewModel` in the same file) — shows the number of
+vocabulary and grammar entries (`entryCount` of both repositories, `null` while loading).
 
-**Detail** (`ui/detail/GrammarDetailScreen.kt`, ViewModel in the same file) — observes one entry;
-edit and delete (with confirmation) actions.
+**Libraries** (`ui/grammar/GrammarLibraryScreen.kt`, `ui/vocabulary/VocabularyLibraryScreen.kt`) —
+each ViewModel combines `repository.entries` with a `LibraryFilter(languageId, categoryId, query)`
+via `libraryState` and a feature-specific `LibraryKeys` (what is the title, which texts are
+searched). All filtering, grouping (sections per language, sorted case-insensitively; entries by
+category then stripped title) and search happen **in memory**. Search matches raw text (so readings
+match) and `stripToBase` text. A language filter whose last entry disappeared is dropped
+automatically. FAB → editor. Only the card composable differs per library.
 
-**Editor** (`ui/editor/`) — `GrammarEditorViewModel` + `EditorUiState`:
-- Title is a `TextFieldValue` (needs the selection for the furigana button); selection-only
-  changes do not mark the state dirty.
+**Detail** (`GrammarDetailScreen.kt` / `VocabularyDetailScreen.kt`, ViewModel in the same file) —
+observes one entry; edit and delete (with confirmation) actions.
+
+**Editors** (`GrammarEditorScreen` + `GrammarEditorViewModel`, `VocabularyEditorScreen` +
+`VocabularyEditorViewModel`) — same structure:
+- Title (grammar) / term and meaning (vocabulary) are `TextFieldValue`s (needed for the furigana
+  button); selection-only changes do not mark the state dirty. Each has a ふ button that opens
+  `FuriganaDialog` for that field (`FuriganaTarget`).
 - Examples are `ExampleDraft(key, sentence, translation)`; `key` is a ViewModel-local counter used
   with Compose `key()` so editor states follow the right example on add/remove.
-- New entries default to the language of the most recently updated entry.
+- New entries default to the language of the most recently updated entry of the same library.
 - Changing language clears the category. `CategoryPickers` supports inline creation of languages
-  and categories (`getOrCreate*`).
+  and categories (`getOrCreate*`, scoped to the library).
 - `isDirty` drives the discard-confirmation dialog (`BackHandler` + close button).
 - Preview mode renders the draft with `RubyText`.
+- Required: title/term and language.
 
 ### 8.4 Theme & strings
 
@@ -317,9 +376,11 @@ edit and delete (with confirmation) actions.
 |------|----------|--------|
 | JVM unit | `app/src/test/…/richtext/RichTextTest.kt` | JSON round-trip, decode fallbacks |
 | JVM unit | `app/src/test/…/ruby/RubyMarkupTest.kt` | parsing, malformed markup, strip, validation |
+| JVM unit | `app/src/test/…/ui/common/LibraryStateTest.kt` | library grouping, sorting, filters, search |
 | Instrumented | `app/src/androidTest/…/richtext/SpanOpsTest.kt` | span merge/split/coverage (needs Android `Spannable`) |
 | Instrumented | `app/src/androidTest/…/ruby/RubySpanTest.kt` | markup → spans, style splitting, metrics |
 | Instrumented | `app/src/androidTest/…/data/GrammarRepositoryTest.kt` | in-memory Room: get-or-create, save/update with examples |
+| Instrumented | `app/src/androidTest/…/data/VocabularyRepositoryTest.kt` | save/update/count, shared languages vs. scoped categories |
 
 Commands (from the repo root):
 
@@ -331,9 +392,9 @@ Commands (from the repo root):
 
 Guidelines: pure Kotlin logic (parsing, filtering, mapping) → JVM tests; anything using
 `android.text.*` or Room → `androidTest`. Repository tests use
-`Room.inMemoryDatabaseBuilder` and the injectable `clock`. There are no ViewModel or Compose UI
-tests yet; the library filter logic (`GrammarEntry.matches`) is a good first candidate to extract
-and unit-test.
+`Room.inMemoryDatabaseBuilder` and the injectable `clock`. There are no ViewModel, Compose UI or
+migration tests yet (a `MigrationTestHelper` test would need the `room-testing` dependency and the
+schemas as androidTest assets).
 
 ---
 
@@ -342,11 +403,12 @@ and unit-test.
 ### Add a new screen / feature
 1. Create `ui/<feature>/<Feature>Screen.kt` and `<Feature>ViewModel.kt` following §8.2.
 2. Add a `@Serializable` route (data object or data class) in `GlossaNavHost.kt` and a
-   `composable<Route> { … }` entry; pass navigation as lambdas.
+   `composable<Route> { … }` entry; pass navigation as lambdas. For a new bottom-bar tab, add a
+   `TopLevelDestination` entry as well.
 3. Construct the ViewModel with `viewModel { XViewModel(createSavedStateHandle(), grammarRepository) }`.
 4. Render user text with `RubyText`; edit formatted text with `RichTextField` + `RichTextToolbar`.
 
-### Add a new persisted field to grammar entries
+### Add a new persisted field to grammar (or vocabulary) entries
 1. Add the column to `GrammarEntryEntity`; bump DB version + migration (§4.5).
 2. Add the field to `GrammarEntry` and `GrammarEntryDraft`; map it in `GrammarRepository`
    (`toModel()` and `save()`).
@@ -368,27 +430,29 @@ and unit-test.
    Old data stays valid; old app versions would fail to decode the new discriminator and fall back
    to plain text, which is acceptable.
 
-### Add another entity type (e.g. vocabulary)
-Mirror the grammar stack: entities + DAO in `data/db/` (add to `@Database(entities)`, bump
-version), domain models in `data/model/`, a `XRepository` in `data/`, a `lazy` instance in
-`GlossaApplication`, a `CreationExtras` accessor, then UI per the screen recipe. Reuse
-`LanguageEntity`/`CategoryEntity` if the new type should share the language taxonomy (categories
-are currently not scoped by entity type — decide whether they should be before reusing them).
+### Add another entity type (e.g. kanji, phrases)
+Mirror the vocabulary stack, which was built this way: entities + DAO in `data/db/` (add to
+`@Database(entities)`, bump version), domain models in `data/model/`, a `XRepository` in `data/`
+implementing `Taxonomy by RoomTaxonomy(taxonomyDao, CategoryType.X)` (add the `CategoryType`
+constant), a `lazy` instance in `GlossaApplication`, a `CreationExtras` accessor, then UI per the
+screen recipe using `ui/common` (`libraryState` + `LibraryKeys`, `LibraryList`, `CategoryPickers`,
+`ExampleEditor`/`ExamplesSection`). Add its count to `HomeScreen` if relevant.
 
 ### Use furigana in a plain `String` field
 Store the string with markup, render with `RubyText(text: String)`, offer `FuriganaDialog` and
-insert `RubyMarkup.format(base, reading)` at the selection (see the title field handling and
-`TextFieldValue.replaceSelection` in `GrammarEditorScreen.kt`). Use `RubyMarkup.stripToBase` for
+insert `RubyMarkup.format(base, reading)` at the selection (see the title field handling in
+`GrammarEditorScreen.kt` and `TextFieldValue.replaceSelection` in `ui/common/Examples.kt`). Use `RubyMarkup.stripToBase` for
 sorting and search.
 
 ---
 
 ## 11. Known gaps & notes
 
-- `descriptionPlain` is written but not read: search currently runs in memory over all entries.
+- `descriptionPlain` / `notesPlain` are written but not read: search currently runs in memory over all entries.
   If the library grows large, move search into SQL (`LIKE` on `title`/`descriptionPlain`, or FTS4)
   — the column already exists for that purpose. Example sentences are not searched.
-- No UI for renaming/deleting languages or categories; orphaned categories persist.
+- No UI for renaming/deleting languages or categories; orphaned categories persist. Languages
+  created from either library show up in both.
 - `rememberRichTextEditorState()` and `RubyTextView.setMarkupText()` are currently unused public
   helpers.
 - `RichTextToolbar`'s color palettes store absolute ARGB values; they're mid-tones chosen to read

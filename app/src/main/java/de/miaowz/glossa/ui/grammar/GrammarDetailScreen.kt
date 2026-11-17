@@ -1,11 +1,10 @@
-package de.miaowz.glossa.ui.detail
+package de.miaowz.glossa.ui.grammar
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,11 +16,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,8 +42,9 @@ import androidx.navigation.toRoute
 import de.miaowz.glossa.data.GrammarRepository
 import de.miaowz.glossa.data.model.GrammarEntry
 import de.miaowz.glossa.ruby.RubyText
+import de.miaowz.glossa.ui.common.ExamplesSection
 import de.miaowz.glossa.ui.grammarRepository
-import de.miaowz.glossa.ui.navigation.EntryDetailRoute
+import de.miaowz.glossa.ui.navigation.GrammarDetailRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -65,7 +63,7 @@ class GrammarDetailViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: GrammarRepository,
 ) : ViewModel() {
-    private val entryId = savedStateHandle.toRoute<EntryDetailRoute>().entryId
+    private val entryId = savedStateHandle.toRoute<GrammarDetailRoute>().entryId
 
     val uiState: StateFlow<DetailUiState> = repository.observeEntry(entryId)
         .map { entry -> if (entry == null) DetailUiState.NotFound else DetailUiState.Loaded(entry) }
@@ -167,27 +165,6 @@ private fun EntryContent(entry: GrammarEntry, modifier: Modifier = Modifier) {
         if (!entry.description.isBlank) {
             RubyText(text = entry.description, style = MaterialTheme.typography.bodyLarge)
         }
-        if (entry.examples.isNotEmpty()) {
-            HorizontalDivider()
-            Text(
-                "Examples",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            entry.examples.forEach { example ->
-                OutlinedCard(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        RubyText(text = example.sentence, style = MaterialTheme.typography.bodyLarge)
-                        if (!example.translation.isBlank) {
-                            RubyText(
-                                text = example.translation,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        ExamplesSection(entry.examples)
     }
 }

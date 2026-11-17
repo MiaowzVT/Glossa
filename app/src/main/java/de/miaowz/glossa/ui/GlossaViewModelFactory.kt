@@ -4,7 +4,14 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewmodel.CreationExtras
 import de.miaowz.glossa.GlossaApplication
 import de.miaowz.glossa.data.GrammarRepository
+import de.miaowz.glossa.data.VocabularyRepository
+
+private val CreationExtras.application: GlossaApplication
+    get() = this[APPLICATION_KEY] as GlossaApplication
 
 /** Access to app-wide dependencies from a `viewModel { ... }` initializer. */
 val CreationExtras.grammarRepository: GrammarRepository
-    get() = (this[APPLICATION_KEY] as GlossaApplication).grammarRepository
+    get() = application.grammarRepository
+
+val CreationExtras.vocabularyRepository: VocabularyRepository
+    get() = application.vocabularyRepository

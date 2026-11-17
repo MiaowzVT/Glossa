@@ -1,10 +1,9 @@
-package de.miaowz.glossa.ui.editor
+package de.miaowz.glossa.ui.grammar
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
@@ -28,14 +26,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -44,26 +40,29 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import de.miaowz.glossa.richtext.RichText
 import de.miaowz.glossa.richtext.RichTextEditorState
 import de.miaowz.glossa.richtext.RichTextField
 import de.miaowz.glossa.richtext.RichTextToolbar
 import de.miaowz.glossa.ruby.FuriganaDialog
 import de.miaowz.glossa.ruby.RubyMarkup
 import de.miaowz.glossa.ruby.RubyText
+import de.miaowz.glossa.ui.common.CategoryPickers
+import de.miaowz.glossa.ui.common.ExampleEditor
+import de.miaowz.glossa.ui.common.ExamplesSection
+import de.miaowz.glossa.ui.common.rememberRegisteredEditor
+import de.miaowz.glossa.ui.common.replaceSelection
+import de.miaowz.glossa.ui.common.selectedText
+import de.miaowz.glossa.ui.common.toPreviewExamples
 import de.miaowz.glossa.ui.grammarRepository
 
 /** Where the furigana dialog inserts its result. */
@@ -234,7 +233,7 @@ fun GrammarEditorScreen(
             onDismiss = { furiganaTarget = null },
         )
         FuriganaTarget.Title -> FuriganaDialog(
-            initialBase = state.title.text.substring(state.title.selection.min, state.title.selection.max),
+            initialBase = state.title.selectedText(),
             onConfirm = { base, reading ->
                 viewModel.setTitle(state.title.replaceSelection(RubyMarkup.format(base, reading)))
                 furiganaTarget = null
@@ -261,55 +260,6 @@ fun GrammarEditorScreen(
     }
 }
 
-/** Creates an editor state and registers it, so the screen knows which field has focus. */
-@Composable
-private fun rememberRegisteredEditor(editors: SnapshotStateList<RichTextEditorState>): RichTextEditorState {
-    val editor = remember { RichTextEditorState() }
-    DisposableEffect(editor) {
-        editors += editor
-        onDispose { editors -= editor }
-    }
-    return editor
-}
-
-@Composable
-private fun ExampleEditor(
-    index: Int,
-    example: ExampleDraft,
-    editors: SnapshotStateList<RichTextEditorState>,
-    onSentenceChange: (RichText) -> Unit,
-    onTranslationChange: (RichText) -> Unit,
-    onRemove: () -> Unit,
-) {
-    OutlinedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "Example ${index + 1}",
-                    style = MaterialTheme.typography.labelLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = onRemove) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Remove example ${index + 1}")
-                }
-            }
-            RichTextField(
-                value = example.sentence,
-                onValueChange = onSentenceChange,
-                state = rememberRegisteredEditor(editors),
-                placeholder = "Sentence",
-                minLines = 2,
-            )
-            RichTextField(
-                value = example.translation,
-                onValueChange = onTranslationChange,
-                state = rememberRegisteredEditor(editors),
-                placeholder = "Translation or note (optional)",
-            )
-        }
-    }
-}
-
 @Composable
 private fun EntryPreview(state: EditorUiState) {
     if (state.title.text.isBlank()) {
@@ -320,29 +270,5 @@ private fun EntryPreview(state: EditorUiState) {
     if (!state.description.isBlank) {
         RubyText(text = state.description, style = MaterialTheme.typography.bodyLarge)
     }
-    val examples = state.examples.filterNot { it.sentence.isBlank && it.translation.isBlank }
-    if (examples.isNotEmpty()) {
-        HorizontalDivider()
-        Text("Examples", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-        examples.forEach { example ->
-            OutlinedCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    RubyText(text = example.sentence, style = MaterialTheme.typography.bodyLarge)
-                    if (!example.translation.isBlank) {
-                        RubyText(
-                            text = example.translation,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-private fun TextFieldValue.replaceSelection(replacement: String): TextFieldValue {
-    val start = selection.min
-    val newText = text.replaceRange(start, selection.max, replacement)
-    return TextFieldValue(newText, TextRange(start + replacement.length))
+    ExamplesSection(state.examples.toPreviewExamples())
 }

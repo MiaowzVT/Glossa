@@ -22,7 +22,8 @@ Android grammar-library app (Kotlin, Jetpack Compose, Room). Single module `:app
   stored in the database.
 - Any entity change needs a DB version bump, a migration, and the generated schema JSON in
   `app/schemas/` committed.
-- UI code goes through `GrammarRepository`, never the DAO or entities.
+- UI code goes through the repositories (`GrammarRepository`, `VocabularyRepository`), never the
+  DAOs or entities.
 - Display user text with `RubyText`, not `Text`.
 - No DI framework: new dependencies go in `GlossaApplication` + a `CreationExtras` accessor in
   `ui/GlossaViewModelFactory.kt`.

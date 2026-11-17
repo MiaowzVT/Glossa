@@ -1,4 +1,4 @@
-package de.miaowz.glossa.ui.editor
+package de.miaowz.glossa.ui.grammar
 
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -7,12 +7,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import de.miaowz.glossa.data.GrammarRepository
-import de.miaowz.glossa.data.model.Category
 import de.miaowz.glossa.data.model.ExampleSentence
 import de.miaowz.glossa.data.model.GrammarEntryDraft
-import de.miaowz.glossa.data.model.Language
 import de.miaowz.glossa.richtext.RichText
-import de.miaowz.glossa.ui.navigation.EntryEditorRoute
+import de.miaowz.glossa.ui.common.CategoryOptions
+import de.miaowz.glossa.ui.common.ExampleDraft
+import de.miaowz.glossa.ui.common.SavedEntry
+import de.miaowz.glossa.ui.navigation.GrammarEditorRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,15 +25,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-/** [key] identifies the example in the UI while examples are added and removed. */
-data class ExampleDraft(
-    val key: Long,
-    val sentence: RichText = RichText.Empty,
-    val translation: RichText = RichText.Empty,
-)
-
-data class SavedEntry(val id: Long, val wasNew: Boolean)
 
 data class EditorUiState(
     val isLoading: Boolean = true,
@@ -51,18 +43,12 @@ data class EditorUiState(
     val languageError: String? get() = if (showErrors && languageId == null) "Choose a language" else null
 }
 
-data class CategoryOptions(
-    val languages: List<Language> = emptyList(),
-    /** Categories of the selected language. */
-    val categories: List<Category> = emptyList(),
-)
-
 class GrammarEditorViewModel(
     savedStateHandle: SavedStateHandle,
     private val repository: GrammarRepository,
 ) : ViewModel() {
 
-    private val entryId = savedStateHandle.toRoute<EntryEditorRoute>().entryId
+    private val entryId = savedStateHandle.toRoute<GrammarEditorRoute>().entryId
     private var nextExampleKey = 0L
 
     private val _uiState = MutableStateFlow(EditorUiState(isNew = entryId == 0L))
