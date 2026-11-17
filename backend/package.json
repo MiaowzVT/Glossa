@@ -1,0 +1,17 @@
+{
+  "name": "glossa-backend",
+  "version": "1.0.0",
+  "description": "The backend for Glossa, serving curated Courses and User Generated Content (UGC).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Miaowz",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  }
+}

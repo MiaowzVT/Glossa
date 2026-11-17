@@ -76,7 +76,7 @@ Continue work on this project. Our next goal is to add a Vocabulary Library next
 - Vocabulary Data Layer follows the same principles as the Grammar Data Layer; we're staying consistent that way
 - UI was restructured in a readable and usable way: Per-feature subpackages make it easy to work with
 
-### Second Prompt
+### Second Prompt (Commit: 1aabca4)
 
 **Prompt**: <br>
 The next step is to implement Spaced Repitition: Implement FSRS for vocabulary. The user should see on the Home screen how many vocabulary cards are open for repitition. When clicking "Start Repitition, a new view opens: A card shows the vocab, and by clicking on it, the user can flip it to see the meaning. There's also the option to press "X" and "✓" buttons. "X" marks the card as wrongly solved, while "✓" marks it as correctly solved. Cards marked as "X" should be asked a second time, but no more than that during the same session. At the end of the session, an overview of time spent, correctly and incorrectly solved cards as well as the percentage of correct cards is shown. Additionally, based on the percentage, the user should be praised for their effort or encouraged to not give up.
