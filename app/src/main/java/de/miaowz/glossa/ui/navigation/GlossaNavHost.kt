@@ -1,5 +1,6 @@
 package de.miaowz.glossa.ui.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -87,6 +88,7 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                             icon = { Icon(destination.icon, contentDescription = null) },
                             label = { Text(destination.label) },
                         )
+                        Log.i("Glossa", "Built NavigationBarItem for ${destination.label}")
                     }
                 }
             }

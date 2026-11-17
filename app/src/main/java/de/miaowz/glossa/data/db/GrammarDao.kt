@@ -1,5 +1,6 @@
 package de.miaowz.glossa.data.db
 
+import android.util.Log
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
@@ -7,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+private const val TAG = "Glossa::GrammarDao"
 @Dao
 interface GrammarDao {
 
@@ -46,6 +48,9 @@ interface GrammarDao {
         val id = if (entry.id == 0L) insertEntry(entry) else entry.id.also { updateEntry(entry) }
         deleteExamples(id)
         insertExamples(examples.mapIndexed { index, example -> example.copy(entryId = id, position = index) })
+
+        Log.i(TAG, "Saving Grammar Entry id=${id} | title=${entry.title};description=${entry.description};language_id=${entry.languageId}")
+
         return id
     }
 }

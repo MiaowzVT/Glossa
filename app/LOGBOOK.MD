@@ -53,7 +53,7 @@ The rules seem to be enough for now. They aim to keep the architecture consisten
 
 ## November 17th, 2026
 
-### First Prompt
+### First Prompt (Commit: 0d16e40)
 
 **Prompt**: <br>
 Continue work on this project. Our next goal is to add a Vocabulary Library next to the Grammar Library. The goal is the following: There should be a navbar at the bottom, allowing the user to switch between three different views: A Main Screen, showing nothing except the amount of Vocabulary and Grammar entries for now, a Grammar Library view, showing the current Grammar Library, and a Vocabulary view, acting pretty much the same as the Grammar Library, but for Vocabulary.
@@ -71,3 +71,11 @@ Continue work on this project. Our next goal is to add a Vocabulary Library next
 
 **Reflection**:
 
+- The updated NavHost works as expected; the state is being kept when switching, so e.g. chosen Categories or the Search are kept.
+- Home Screen is a placeholder for now, so the current implementation is fine.
+- Vocabulary Data Layer follows the same principles as the Grammar Data Layer; we're staying consistent that way
+- UI was restructured in a readable and usable way: Per-feature subpackages make it easy to work with
+
+### Second Prompt
+
+**Prompt**:
