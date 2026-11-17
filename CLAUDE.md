@@ -18,8 +18,8 @@ Android grammar-library app (Kotlin, Jetpack Compose, Room). Single module `:app
 - Read `ARCHITECTURE.md` §10 (Recipes) before adding a screen, field, format or entity type.
 - Keep `ARCHITECTURE.md` up to date when a change affects layering, schema, stored formats,
   navigation or conventions.
-- Never rename a `SpanFormat` `@SerialName` or change the `{base|reading}` ruby markup: both are
-  stored in the database.
+- Never rename a `SpanFormat` `@SerialName`, the `CategoryType` / `Rating` enum constants, or
+  change the `{base|reading}` ruby markup: all are stored in the database.
 - Any entity change needs a DB version bump, a migration, and the generated schema JSON in
   `app/schemas/` committed.
 - UI code goes through the repositories (`GrammarRepository`, `VocabularyRepository`), never the

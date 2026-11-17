@@ -14,11 +14,15 @@ import androidx.room.RoomDatabase
         ExampleSentenceEntity::class,
         VocabularyEntryEntity::class,
         VocabularyExampleEntity::class,
+        VocabularyReviewStateEntity::class,
+        VocabularyReviewLogEntity::class,
     ],
-    version = 2,
+    version = 3,
     autoMigrations = [
         // Adds vocabulary tables and scopes categories by CategoryType.
         AutoMigration(from = 1, to = 2),
+        // Adds the vocabulary review (FSRS) tables.
+        AutoMigration(from = 2, to = 3),
     ],
 )
 abstract class GlossaDatabase : RoomDatabase() {

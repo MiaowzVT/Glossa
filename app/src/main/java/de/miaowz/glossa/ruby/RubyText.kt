@@ -3,6 +3,7 @@ package de.miaowz.glossa.ruby
 import android.graphics.Typeface
 import android.text.TextUtils
 import android.util.TypedValue
+import android.view.Gravity
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
@@ -13,11 +14,15 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.viewinterop.AndroidView
 import de.miaowz.glossa.richtext.RichText
 
-/** Compose wrapper around [RubyTextView]: renders rich text with furigana. */
+/**
+ * Compose wrapper around [RubyTextView]: renders rich text with furigana. Of [style], size, weight,
+ * italic, color and text alignment are applied.
+ */
 @Composable
 fun RubyText(
     text: RichText,
@@ -51,6 +56,11 @@ fun RubyText(
                     else -> Typeface.NORMAL
                 },
             )
+            view.gravity = when (style.textAlign) {
+                TextAlign.Center -> Gravity.CENTER_HORIZONTAL
+                TextAlign.End, TextAlign.Right -> Gravity.END
+                else -> Gravity.START
+            }
             view.maxLines = maxLines
             view.ellipsize = if (maxLines == Int.MAX_VALUE) null else TextUtils.TruncateAt.END
             view.setRichText(text)

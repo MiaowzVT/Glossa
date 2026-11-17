@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -40,18 +44,25 @@ import kotlinx.coroutines.flow.stateIn
 data class HomeUiState(
     val vocabularyCount: Int? = null,
     val grammarCount: Int? = null,
+    /** Vocabulary cards due for repetition, including new ones. */
+    val dueCount: Int? = null,
 )
 
 class HomeViewModel(grammarRepository: GrammarRepository, vocabularyRepository: VocabularyRepository) : ViewModel() {
     val uiState: StateFlow<HomeUiState> =
-        combine(vocabularyRepository.entryCount, grammarRepository.entryCount) { vocabulary, grammar ->
-            HomeUiState(vocabularyCount = vocabulary, grammarCount = grammar)
+        combine(
+            vocabularyRepository.entryCount,
+            grammarRepository.entryCount,
+            vocabularyRepository.dueCount,
+        ) { vocabulary, grammar, due ->
+            HomeUiState(vocabularyCount = vocabulary, grammarCount = grammar, dueCount = due)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onStartReview: () -> Unit,
     viewModel: HomeViewModel = viewModel { HomeViewModel(grammarRepository, vocabularyRepository) },
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -61,8 +72,41 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            ReviewCard(state, onStartReview)
             CountCard(Icons.Outlined.Translate, "Vocabulary", state.vocabularyCount)
             CountCard(Icons.AutoMirrored.Outlined.MenuBook, "Grammar", state.grammarCount)
+        }
+    }
+}
+
+@Composable
+private fun ReviewCard(state: HomeUiState, onStartReview: () -> Unit) {
+    val due = state.dueCount
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    ) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Repetition", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        when {
+                            due == null -> ""
+                            state.vocabularyCount == 0 -> "Add vocabulary to start practicing."
+                            due == 0 -> "All caught up. Come back later!"
+                            due == 1 -> "vocabulary card due"
+                            else -> "vocabulary cards due"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+                Text(due?.toString() ?: "–", style = MaterialTheme.typography.displaySmall)
+            }
+            Button(onClick = onStartReview, enabled = (due ?: 0) > 0, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                Text("Start repetition", Modifier.padding(start = 8.dp))
+            }
         }
     }
 }

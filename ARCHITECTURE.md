@@ -4,7 +4,8 @@ Glossa is a single-module Android app for building a personal **grammar library*
 **vocabulary library** for language learning. Grammar entries have a title, a rich-text description
 and example sentences; vocabulary entries have a term, a meaning, rich-text notes and example
 sentences. Both are categorized by **Language → Category** and support **furigana** (ruby text)
-everywhere. A bottom navigation bar switches between Home, Grammar and Vocabulary.
+everywhere. A bottom navigation bar switches between Home, Grammar and Vocabulary. Vocabulary is
+practiced with flashcards scheduled by **FSRS** (spaced repetition), started from Home.
 
 This document is the working reference for extending the code base. It describes the layers, the
 data formats that must stay stable, the invariants each component relies on, and step-by-step
@@ -37,7 +38,7 @@ Package / application id: `de.miaowz.glossa`.
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ ui/                     Compose screens + ViewModels (one package/feature)│
 │   navigation/           NavHost, bottom bar, @Serializable routes         │
-│   home/ grammar/ vocabulary/   common/ (shared UI)   theme/                │
+│   home/ grammar/ vocabulary/ review/   common/ (shared UI)   theme/        │
 ├───────────────────────────────┬──────────────────────────────────────────┤
 │ richtext/   (reusable widget) │ ruby/     (reusable widget)               │
 │ RichText model, editor View,  │ {base|reading} markup, RubySpan,          │
@@ -45,19 +46,23 @@ Package / application id: `de.miaowz.glossa`.
 ├───────────────────────────────┴──────────────────────────────────────────┤
 │ data/        GrammarRepository, VocabularyRepository (+ Taxonomy)  ←→ model│
 │   db/                   Room: entities, DAOs, database                    │
+├──────────────────────────────────────────────────────────────────────────┤
+│ srs/                    FSRS-5 algorithm + day-based scheduling (pure JVM) │
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
 Dependency rules (keep these when adding code):
 
-- `ui/*` depends on `data` (repository + `data.model`), `richtext`, `ruby`. **UI never touches
-  `data.db` entities or the DAO.**
-- `data` depends on `richtext.RichText` (as a value type, for encode/decode) and
-  `ruby.RubyMarkup` (for plain-text extraction). It does not depend on Android Views.
+- `ui/*` depends on `data` (repository + `data.model`), `richtext`, `ruby`, and `srs.Rating`.
+  **UI never touches `data.db` entities or the DAO.**
+- `data` depends on `richtext.RichText` (as a value type, for encode/decode),
+  `ruby.RubyMarkup` (for plain-text extraction) and `srs` (scheduling). It does not depend on
+  Android Views.
+- `srs` is pure Kotlin (no Android, no Room) and depends on nothing else in the app.
 - `richtext` and `ruby` are feature-agnostic widgets. They know nothing about grammar entries.
   `richtext` uses `ruby.RubyMarkup` (for `insertRuby`), `ruby` uses `richtext.RichText`
   (for rendering). That mutual dependency is intentional and limited to these two packages.
-- Feature packages under `ui/` (`home`, `grammar`, `vocabulary`) don't import each other; they
+- Feature packages under `ui/` (`home`, `grammar`, `vocabulary`, `review`) don't import each other; they
   communicate only via navigation callbacks. Code shared between features lives in `ui/common/`,
   which must not import feature packages.
 
@@ -87,7 +92,7 @@ without a deliberate decision — the pattern is meant to stay this small.
 
 ## 4. Data layer
 
-### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **2**, file `glossa.db`)
+### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **3**, file `glossa.db`)
 
 ```
 languages            categories                    grammar_entries                     example_sentences
@@ -110,6 +115,13 @@ name NOCASE UNIQUE   languageId FK→languages       title          (String, rub
                                                    languageId FK  ON DELETE RESTRICT   translation  (RichText JSON)
                                                    categoryId? FK ON DELETE SET_NULL
                                                    createdAt, updatedAt (epoch ms)
+
+vocabulary_review_states                           vocabulary_review_logs
+────────────────────────                           ──────────────────────
+entryId PK, FK→vocabulary_entries CASCADE          id PK
+stability, difficulty (REAL)                       entryId FK→vocabulary_entries CASCADE
+due (epoch ms, indexed), lastReview (epoch ms)     rating (Rating enum name)
+reps, lapses                                       reviewedAt (epoch ms)
 ```
 
 - **Languages are shared** by both libraries; **categories are scoped per library** by
@@ -118,6 +130,11 @@ name NOCASE UNIQUE   languageId FK→languages       title          (String, rub
 - `GrammarEntryWithDetails` / `VocabularyEntryWithDetails` are the `@Relation` aggregates
   (entry + language + category + examples) returned by all entry queries; those queries are
   `@Transaction`.
+- **Review state lives in its own table**, not on `vocabulary_entries`, so saving an entry in the
+  editor never touches it. A vocabulary entry **without** a review-state row is a *new* card and
+  is always due. Every answer is also appended to `vocabulary_review_logs` (not read yet; kept for
+  statistics and future FSRS parameter optimization). `Rating` is stored by enum name — never
+  rename the constants.
 - Names are unique **case-insensitively** (`COLLATE NOCASE`) — `getOrCreate*` relies on this.
 - Deleting a language with entries fails (`RESTRICT`); deleting a category nulls the entries'
   `categoryId`. There is currently no UI to delete languages/categories.
@@ -127,6 +144,10 @@ name NOCASE UNIQUE   languageId FK→languages       title          (String, rub
 - `TaxonomyDao`: languages and categories; category queries take a `CategoryType`.
 - `GrammarDao` / `VocabularyDao`: same shape. Observations return `Flow` (`observeEntries`,
   `observeEntry`, `observeCount`); one-shot reads/writes are `suspend`.
+- `VocabularyDao` review queries: `observeDueDates()` (`COALESCE(due, 0)` per entry, so new cards
+  count as due), `getDueEntries(now)` (reviewed cards by oldest due first, then new cards by
+  creation), `getReviewState`, and `saveReview(state, log)` (upsert state + insert log, one
+  transaction).
 - `saveEntry(entry, examples)` is the single write path for entries: insert-or-update the entry,
   **delete all its examples and re-insert** them with `position = index`. Examples have no stable
   identity across saves.
@@ -146,6 +167,10 @@ their structure. Responsibilities:
   `updatedAt = clock()`, computes the `*Plain` search column, and **drops examples where both
   sentence and translation are blank**.
 - `entryCount: Flow<Int>` for the home screen.
+- Vocabulary repetition (`VocabularyRepository`): `dueCount: Flow<Int>` (combined with a
+  one-minute ticker, because cards become due by time passing, not by DB changes),
+  `getDueEntries()` and `review(entryId, rating)`, which loads the card's state, runs
+  `Fsrs.schedule` and saves state + log. `zone` and `fsrs` are injectable like `clock`.
 - `getOrCreateLanguage(name)` / `getOrCreateCategory(languageId, name)`: trimmed, case-insensitive
   reuse.
 - `clock` is injectable for tests.
@@ -171,7 +196,28 @@ entity:
 History: `1 → 2` is an `@AutoMigration` (new vocabulary tables; `categories` gets `type` with
 default `'GRAMMAR'` and a new unique index, which Room does by rebuilding the table). Room enables
 `PRAGMA foreign_keys` only in `onOpen`, after migrations, so table rebuilds don't fire
-`ON DELETE` actions.
+`ON DELETE` actions. `2 → 3` is an `@AutoMigration` adding the two vocabulary review tables
+(existing vocabulary becomes new cards).
+
+### 4.6 Spaced repetition (`srs/`)
+
+| File | Role |
+|------|------|
+| `Fsrs.kt` | `Rating` (Again/Hard/Good/Easy), `MemoryState(stability, difficulty)`, and `Fsrs`: FSRS-5 with its 19 default parameters, `desiredRetention = 0.9`, `maximumInterval = 36500` days. `initialState`, `nextState(state, elapsedDays, rating)`, `retrievability`, `nextInterval`. |
+| `Scheduler.kt` | `CardState` (stability, difficulty, due, lastReview, reps, lapses) and `Fsrs.schedule(previous, rating, now, zone)`. |
+
+- Formulas follow the FSRS-5 reference (linear-damped difficulty with mean reversion to
+  D₀(Easy), short-term stability for same-day reviews, post-lapse stability capped by the current
+  one). Stability is in days; at 90 % retention the interval equals the stability.
+- **Days are calendar days in the device's time zone:** `elapsedDays` is the number of local date
+  changes since the last review (0 ⇒ same-day/short-term formula), and a card becomes due at the
+  **start of the local day** its interval ends on. So a card answered Good at 23:00 for a 3-day
+  interval is due from midnight three days later.
+- Intervals are whole days ≥ 1: there are no minute-level learning steps. A card failed today is
+  due tomorrow; within a session, the session itself repeats it once (§8.3).
+- `lapses` counts Again on already-reviewed cards; the first answer on a new card is not a lapse.
+- The review UI only uses `Again` (✗) and `Good` (✓); `Hard`/`Easy` are implemented for
+  completeness.
 
 ---
 
@@ -261,7 +307,7 @@ shows `RichTextToolbar` for the one with `isFocused`.
 | `RubyMarkup.kt` | Parse/format/validate/strip `{base|reading}` (pure Kotlin, unit-tested). |
 | `RubySpan.kt` | `ReplacementSpan` drawing base text with the reading centered above; `RubySpan.applyTo(Spannable)` converts all markup. |
 | `RubyTextView.kt` | Read-only `TextView`: `setRichText(RichText)` → `toSpannable()` + `RubySpan.applyTo`. |
-| `RubyText.kt` | Compose wrappers `RubyText(RichText)` and `RubyText(String)`; maps `TextStyle` (size, weight, italic, color, maxLines) onto the view. |
+| `RubyText.kt` | Compose wrappers `RubyText(RichText)` and `RubyText(String)`; maps `TextStyle` (size, weight, italic, color, text alignment as gravity) and `maxLines` onto the view. |
 | `FuriganaDialog.kt` | Dialog asking for base + reading with live preview. |
 
 Notes:
@@ -285,6 +331,7 @@ Notes:
 | Route | Screen | Args |
 |-------|--------|------|
 | `HomeRoute` (start, tab) | `HomeScreen` | — |
+| `ReviewRoute` | `ReviewScreen` | — (loads due vocabulary itself) |
 | `GrammarLibraryRoute` (tab) | `GrammarLibraryScreen` | — |
 | `GrammarDetailRoute(entryId)` | `GrammarDetailScreen` | entry id |
 | `GrammarEditorRoute(entryId = 0)` | `GrammarEditorScreen` | `0` = create new |
@@ -332,8 +379,26 @@ Every feature package contains `XScreen.kt` and (unless trivial) `XViewModel.kt`
 
 ### 8.3 Screens
 
-**Home** (`ui/home/HomeScreen.kt`, `HomeViewModel` in the same file) — shows the number of
-vocabulary and grammar entries (`entryCount` of both repositories, `null` while loading).
+**Home** (`ui/home/HomeScreen.kt`, `HomeViewModel` in the same file) — a repetition card with the
+number of due vocabulary cards (`dueCount`) and a "Start repetition" button (disabled when nothing is
+due), plus the number of vocabulary and grammar entries (`entryCount`). Counts are `null` while
+loading.
+
+**Review** (`ui/review/`) — a vocabulary repetition session:
+- `ReviewSession<T>` (pure, JVM-tested) is the queue: a card answered wrong is appended to the
+  end **once** (`ReviewCard.isRetry`); a wrong second attempt is not re-queued. It counts
+  correct/incorrect **answers** (a card wrong then right counts once on each side).
+- `ReviewViewModel` loads `getDueEntries()` once (a snapshot; cards that become due during the
+  session wait for the next one), exposes `ReviewUiState` (Loading / NothingDue / Reviewing /
+  Finished) and measures the duration with `TimeSource.Monotonic`. Every answer is written
+  immediately via `repository.review(id, Good|Again)`, serialized with a `Mutex` — leaving early
+  keeps the progress. The retry is a real (same-day) FSRS review too.
+- `ReviewScreen`: a flashcard flipped by tapping (`graphicsLayer.rotationY`, the back face is
+  counter-rotated). The front shows the term **without furigana** (`stripToBase`), the back the
+  term with furigana, meaning and notes. The flashcard is wrapped in `key(id, isRetry)` so the
+  flip state/animation resets per card and never reveals the next card's back. ✗ / ✓ buttons are
+  available before flipping too. The summary shows time spent, correct, incorrect and percentage,
+  with a praise/encouragement message picked by percentage (`feedbackFor`).
 
 **Libraries** (`ui/grammar/GrammarLibraryScreen.kt`, `ui/vocabulary/VocabularyLibraryScreen.kt`) —
 each ViewModel combines `repository.entries` with a `LibraryFilter(languageId, categoryId, query)`
@@ -377,10 +442,13 @@ observes one entry; edit and delete (with confirmation) actions.
 | JVM unit | `app/src/test/…/richtext/RichTextTest.kt` | JSON round-trip, decode fallbacks |
 | JVM unit | `app/src/test/…/ruby/RubyMarkupTest.kt` | parsing, malformed markup, strip, validation |
 | JVM unit | `app/src/test/…/ui/common/LibraryStateTest.kt` | library grouping, sorting, filters, search |
+| JVM unit | `app/src/test/…/srs/FsrsTest.kt` | FSRS-5 initial state, retrievability, intervals, stability/difficulty updates |
+| JVM unit | `app/src/test/…/srs/SchedulerTest.kt` | due dates at start of local day, lapses, same-day and calendar-day handling |
+| JVM unit | `app/src/test/…/ui/review/ReviewSessionTest.kt` | session queue (retry once), counts, percentage |
 | Instrumented | `app/src/androidTest/…/richtext/SpanOpsTest.kt` | span merge/split/coverage (needs Android `Spannable`) |
 | Instrumented | `app/src/androidTest/…/ruby/RubySpanTest.kt` | markup → spans, style splitting, metrics |
 | Instrumented | `app/src/androidTest/…/data/GrammarRepositoryTest.kt` | in-memory Room: get-or-create, save/update with examples |
-| Instrumented | `app/src/androidTest/…/data/VocabularyRepositoryTest.kt` | save/update/count, shared languages vs. scoped categories |
+| Instrumented | `app/src/androidTest/…/data/VocabularyRepositoryTest.kt` | save/update/count, shared languages vs. scoped categories, due count/order, review rescheduling |
 
 Commands (from the repo root):
 
@@ -458,5 +526,9 @@ sorting and search.
 - `RichTextToolbar`'s color palettes store absolute ARGB values; they're mid-tones chosen to read
   on both light and dark themes.
 - Theme is the template default; strings are not externalized (see §8.4).
+- Spaced repetition: no daily limit for new cards (all new vocabulary is due at once), FSRS
+  parameters are the defaults (not optimized from `vocabulary_review_logs`), and the session is not
+  restored after process death (answers already given are saved). Grammar has no repetition yet;
+  the review UI and `ReviewSession` are generic enough to reuse.
 - `app/LOGBOOK.MD` is the AI-usage logbook (prompt + summary of changes per session). Append an
   entry there when making AI-assisted changes.

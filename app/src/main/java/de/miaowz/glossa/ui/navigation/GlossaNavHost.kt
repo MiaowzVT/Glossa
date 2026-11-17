@@ -29,6 +29,7 @@ import de.miaowz.glossa.ui.grammar.GrammarDetailScreen
 import de.miaowz.glossa.ui.grammar.GrammarEditorScreen
 import de.miaowz.glossa.ui.grammar.GrammarLibraryScreen
 import de.miaowz.glossa.ui.home.HomeScreen
+import de.miaowz.glossa.ui.review.ReviewScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyDetailScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyEditorScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyLibraryScreen
@@ -36,6 +37,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data object HomeRoute
+
+/** Vocabulary repetition session. */
+@Serializable
+data object ReviewRoute
 
 @Serializable
 data object GrammarLibraryRoute
@@ -100,7 +105,10 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(padding).consumeWindowInsets(padding),
         ) {
             composable<HomeRoute> {
-                HomeScreen()
+                HomeScreen(onStartReview = { navController.navigate(ReviewRoute) })
+            }
+            composable<ReviewRoute> {
+                ReviewScreen(onClose = { navController.popBackStack() })
             }
 
             composable<GrammarLibraryRoute> {

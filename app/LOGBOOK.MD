@@ -78,4 +78,23 @@ Continue work on this project. Our next goal is to add a Vocabulary Library next
 
 ### Second Prompt
 
-**Prompt**:
+**Prompt**: <br>
+The next step is to implement Spaced Repitition: Implement FSRS for vocabulary. The user should see on the Home screen how many vocabulary cards are open for repitition. When clicking "Start Repitition, a new view opens: A card shows the vocab, and by clicking on it, the user can flip it to see the meaning. There's also the option to press "X" and "✓" buttons. "X" marks the card as wrongly solved, while "✓" marks it as correctly solved. Cards marked as "X" should be asked a second time, but no more than that during the same session. At the end of the session, an overview of time spent, correctly and incorrectly solved cards as well as the percentage of correct cards is shown. Additionally, based on the percentage, the user should be praised for their effort or encouraged to not give up.
+
+**Changes**: <br>
+
+- **FSRS algorithm** (new package `srs/`, pure Kotlin): `Fsrs` implements FSRS-5 with its default parameters and 90 % desired retention; `Fsrs.schedule` turns a review into a new `CardState` (stability, difficulty, due date, reps, lapses). Days are calendar days in the device's time zone, and cards become due at the start of the day. "✗" is graded as *Again*, "✓" as *Good*.
+- **Database version 3:** new tables `vocabulary_review_states` (FSRS state per vocabulary card; no row = new card, always due) and `vocabulary_review_logs` (every answer, for statistics and a possible future FSRS parameter optimization). `@AutoMigration(2 → 3)`, schema `3.json` generated.
+- **Repository:** `VocabularyRepository` got `dueCount` (refreshes every minute, since cards become due by time passing), `getDueEntries()` and `review(entryId, rating)`.
+- **Home screen:** new "Repetition" card showing the number of due vocabulary cards and a "Start repetition" button (disabled when nothing is due).
+- **Review screen** (new package `ui/review/`): flashcard that flips with an animation on tap. The front shows the word without furigana, the back the word with furigana, its meaning and notes. "✗ Wrong" / "✓ Correct" buttons. Wrong cards are asked once more at the end of the session, but not a third time. Each answer is saved immediately, so leaving the session early keeps the progress. The end-of-session summary shows time spent, correct/incorrect answers and the percentage, with a praise or encouragement message depending on the percentage.
+- `RubyText` now also respects `TextAlign` (needed to center text on the flashcard).
+- **Tests:** new JVM tests `FsrsTest`, `SchedulerTest`, `ReviewSessionTest`; `VocabularyRepositoryTest` extended with due counts, ordering and rescheduling.
+- `ARCHITECTURE.md` (new §4.6 Spaced repetition, schema, screens, tests, known gaps) and `CLAUDE.md` updated.
+
+**Reflection**:
+
+- FSRS lies in its own package. The implementation looks clean.
+- Reviews are their own UI package. The code also looks implemented well and maintainable. It works as expected.
+- One manual change: `ReviewSession.kt:41`: Claude implemented the calculation of the correct percentage of cards using the Java `Math.round()` method. To keep it as clean Kotlin code, it was replaced with the built-in Kotlin function `roundToInt()`:
+  `Math.round(correct * 100f / (correct + incorrect)` -> `(correct * 100f / (correct + incorrect)).roundToInt()`

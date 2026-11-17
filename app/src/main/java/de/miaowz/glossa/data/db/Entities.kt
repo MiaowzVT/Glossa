@@ -7,6 +7,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
+import de.miaowz.glossa.srs.Rating
 
 @Entity(
     tableName = "languages",
@@ -161,4 +162,48 @@ data class VocabularyEntryWithDetails(
     val category: CategoryEntity?,
     @Relation(parentColumn = "id", entityColumn = "entryId")
     val examples: List<VocabularyExampleEntity>,
+)
+
+/** FSRS state of a vocabulary card (see [de.miaowz.glossa.srs.CardState]); no row means the card is new. */
+@Entity(
+    tableName = "vocabulary_review_states",
+    foreignKeys = [
+        ForeignKey(
+            entity = VocabularyEntryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["entryId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("due")],
+)
+data class VocabularyReviewStateEntity(
+    @PrimaryKey val entryId: Long,
+    val stability: Double,
+    val difficulty: Double,
+    /** Epoch ms; the card is due from this point on. */
+    val due: Long,
+    val lastReview: Long,
+    val reps: Int,
+    val lapses: Int,
+)
+
+/** One answer per row, kept for statistics and future FSRS parameter optimization. */
+@Entity(
+    tableName = "vocabulary_review_logs",
+    foreignKeys = [
+        ForeignKey(
+            entity = VocabularyEntryEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["entryId"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index("entryId")],
+)
+data class VocabularyReviewLogEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val entryId: Long,
+    val rating: Rating,
+    val reviewedAt: Long,
 )
