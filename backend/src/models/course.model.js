@@ -48,7 +48,7 @@ const Course = {
     async update(id, { course_name, course_description, course_level, course_language }) {
         const [result] = await db.query(
             'UPDATE official_course SET course_name = ?, course_description = ?, course_level = ?, course_language = ?, updated_at = ? WHERE id = ?',
-            [course_name, course_description, course_level, course_language, new Date()]
+            [course_name, course_description, course_level, course_language, new Date(), id]
         );
 
         return result.affectedRows > 0 ? this.findById(id) : null;
