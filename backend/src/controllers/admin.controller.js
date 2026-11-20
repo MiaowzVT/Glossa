@@ -15,7 +15,7 @@ async function findCourse(id) {
 
 async function findLecture(id) {
     if (!/^\d+$/.test(id)) return undefined;
-    const [[lecture]] = await CourseLecture.findById(id);
+    const [lecture] = await CourseLecture.findById(id);
     return lecture;
 }
 
@@ -86,7 +86,7 @@ export async function storeCourse(req, res) {
         return res.status(422).send(Views.courseForm({ values, errors, languages: await knownLanguages() }));
     }
 
-    const [[course]] = await Course.create(values);
+    const [course] = await Course.create(values);
     res.redirect(303, `/admin/courses/${course.id}`);
 }
 
@@ -120,7 +120,7 @@ export async function storeLecture(req, res) {
         return res.status(422).send(Views.lectureForm({ course, values, errors }));
     }
 
-    const [[lecture]] = await CourseLecture.create({ course_id: course.id, ...values });
+    const [lecture] = await CourseLecture.create({ course_id: course.id, ...values });
     res.redirect(303, `/admin/lectures/${lecture.id}`);
 }
 
