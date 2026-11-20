@@ -37,7 +37,7 @@ const CourseLecture = {
     },
 
     async delete(id) {
-        const [result] = await db.query('DELETE * FROM official_course_lecture WHERE id = ?', id);
+        const [result] = await db.query('DELETE FROM official_course_lecture WHERE id = ?', id);
 
         return result.affectedRows > 0;
     }

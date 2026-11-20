@@ -46,7 +46,7 @@ const UGCCourseLecture = {
     },
 
     async delete(id) {
-        const [result] = await db.query('DELETE * FROM ugc_lecture WHERE id = ?', id);
+        const [result] = await db.query('DELETE FROM ugc_lecture WHERE id = ?', id);
 
         return result.affectedRows > 0;
     }
