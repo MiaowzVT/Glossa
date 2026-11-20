@@ -4,7 +4,7 @@ import logger from '../utils/logger.js';
 export async function index(req, res) {
     logger.info(`GET: /api/ugc_course [INDEX]`);
     const courses = await UGCCourse.findAll();
-    res.end(courses);
+    res.end(JSON.stringify(courses));
 }
 
 export async function fetch(req, res) {

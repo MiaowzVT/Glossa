@@ -15,7 +15,7 @@ const Course = {
             [id]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async findByLanguage(language) {

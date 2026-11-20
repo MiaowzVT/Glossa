@@ -7,6 +7,7 @@ import courseRoutes from './routes/course.routes.js';
 import courseLectureRoutes from './routes/course_lecture.routes.js';
 import ugcCourseRoutes from './routes/ugc_course.routes.js';
 import ugcLectureRoutes from './routes/ugc_lecture.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 const app = express();
 const port = 8096;
@@ -19,6 +20,7 @@ app.use('/api/course', courseRoutes);
 app.use('/api/course_lecture', courseLectureRoutes);
 app.use('/api/ugc_course', ugcCourseRoutes);
 app.use('/api/ugc_lecture', ugcLectureRoutes);
+app.use('/admin', adminRoutes);
 
 app.listen(port, () => {
     console.log(`

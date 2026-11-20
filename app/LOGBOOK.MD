@@ -98,3 +98,29 @@ The next step is to implement Spaced Repitition: Implement FSRS for vocabulary. 
 - Reviews are their own UI package. The code also looks implemented well and maintainable. It works as expected.
 - One manual change: `ReviewSession.kt:41`: Claude implemented the calculation of the correct percentage of cards using the Java `Math.round()` method. To keep it as clean Kotlin code, it was replaced with the built-in Kotlin function `roundToInt()`:
   `Math.round(correct * 100f / (correct + incorrect)` -> `(correct * 100f / (correct + incorrect)).roundToInt()`
+
+## November 20th, 2026
+
+### First Prompt
+
+**Prompt**: <br>
+This is the backend for my app. I already created the API. I now need an Admin Panel that will allow me to create official courses. For that, create an endpoint /admin that serves the panel. It should show first an overview of all courses as well as a "Create Course" button. Upon clicking, there should be another page where I can create the course based on the constraints given in the database (you can deduct the database schema from the migrations in the backend's directory). After a course has been created, it should appear in the Admin Panel. When clicking on a course, I want an overview of all created lectures and a "Create Lecture" button. clicking it should open a new page, allowing me to create a lecture based on the database's restrictions. It should also contain a RichTextEditor as well as the option to implement RubyText, just like in the app. For saving the text, keep it in the same format as the app currently does for Grammar and Vocabulary entries, as the backend needs to be interoperable with the frontend and the app. Finally, after creating a Lecture, it should appear on the Lecture List in the Admin panel. When clicking a lecture, it should show the lecture, and an edit button should appear too. Clicking that allows for editing the lecture and saving it again.
+
+**Changes**: <br>
+
+- **Admin panel at `/admin`** (backend): server-rendered HTML pages, no new dependencies. `src/routes/admin.routes.js` + `src/controllers/admin.controller.js` (using the existing `Course` / `CourseLecture` models), templates in `src/admin/views.js`, static assets under `/admin/assets`.
+- **Pages:** course overview with "Create Course"; course form (name, language, level, description); course page with its lecture list and "Create Lecture"; lecture view with "Edit"; lecture create/edit form.
+- **Validation from the migrations:** every column is `NOT NULL`, `VARCHAR(255)` fields max. 255 characters, `TEXT(65535)` fields max. 65,535 bytes (UTF-8, counted on the stored JSON). Errors re-render the form (HTTP 422) with the input kept; success redirects (Post/Redirect/Get).
+- **Same storage format as the app:** `src/admin/public/richtext.js` mirrors `RichText.kt`, `SpanOps.kt` and `RubyMarkup.kt`: `lecture_contents` is `RichText` JSON (byte-identical to kotlinx.serialization, signed ARGB ints, same palettes and size options), lecture and course names are strings with `{base|reading}` markup. Submitted contents are decoded and re-encoded server-side, so only well-formed RichText reaches the database.
+- **Rich text editor** (`src/admin/public/editor.js`, `admin.js`): bold, italic, underline, strikethrough, text color, highlight, size, clear formatting, ふ furigana dialog with live preview (wraps the selected text like `insertRuby`), preview mode with rendered furigana, plain-text paste, undo/redo, works with IME input. Like the app, the editor shows raw ruby markup; the lecture page renders it as `<ruby>`.
+- `ARCHITECTURE.md` §5 notes that the backend implements both stored formats too.
+
+**Reflection**: <br>
+
+To be fair, this prompt was only done because I'm not going to waste my time on creating an Admin Panel which sole purpose is to make it easier to create test content. The alternative would have been to just spam POST requests to the create endpoint, but that's just super inconvenient.
+
+Anyway, CLAUDE did some okayish work here. The code for the Admin Panel code itself is really not that great; mainly because there's just a lot of HTML Tags in between JavaScript code to generate things like Cards for each course or lecture, and especially since Claude did not split views into their own JS-files. Instead every view is just it's own function inside `views.js`. If this was something that would need to be production-ready, I'd definitely refactor it. At the same time I probably couldn't have done it much better myself and the code would have looked even more like a battlefield. It's functional, does what it should and is only something to use for testing and demonstration purposes right now. It is absolutely not production-ready, especially since I purposefully omitted any kind of authentication to keep the scope of the project to what's relevant - the backend should act more like a proof-of-concept rather than a full-scale implementation with proper Cybersecurity in mind.
+
+The controller that does all the behind-the-scenes work looks fine. It reuses our `Course` and `CourseLecture` controllers for any kind of SQL logic, and there's also a lot of validation for correct datatypes happening to ensure everything is correct.
+
+The actual best part about this prompt' work: Claude actually found a few bugs in the implementation of the backend that I probably overlooked by being sleep deprived or something. So these will be checked out and fixed accordingly in the next commit.

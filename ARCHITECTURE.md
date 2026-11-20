@@ -226,6 +226,11 @@ default `'GRAMMAR'` and a new unique index, which Room does by rebuilding the ta
 These two formats are stored in the database. Changing them requires a migration or a
 backwards-compatible decoder.
 
+Both formats are also implemented in the backend's admin panel
+(`backend/src/admin/public/richtext.js`), which writes official lecture contents as `RichText`
+JSON and lecture/course names as ruby-markup strings. Keep it in sync when changing either format
+(new `SpanFormat`, palette, size options).
+
 ### 5.1 Ruby markup — `ruby/RubyMarkup.kt`
 
 ```
