@@ -101,7 +101,7 @@ The next step is to implement Spaced Repitition: Implement FSRS for vocabulary. 
 
 ## November 20th, 2026
 
-### First Prompt
+### First Prompt (Commit: df6e1e2)
 
 **Prompt**: <br>
 This is the backend for my app. I already created the API. I now need an Admin Panel that will allow me to create official courses. For that, create an endpoint /admin that serves the panel. It should show first an overview of all courses as well as a "Create Course" button. Upon clicking, there should be another page where I can create the course based on the constraints given in the database (you can deduct the database schema from the migrations in the backend's directory). After a course has been created, it should appear in the Admin Panel. When clicking on a course, I want an overview of all created lectures and a "Create Lecture" button. clicking it should open a new page, allowing me to create a lecture based on the database's restrictions. It should also contain a RichTextEditor as well as the option to implement RubyText, just like in the app. For saving the text, keep it in the same format as the app currently does for Grammar and Vocabulary entries, as the backend needs to be interoperable with the frontend and the app. Finally, after creating a Lecture, it should appear on the Lecture List in the Admin panel. When clicking a lecture, it should show the lecture, and an edit button should appear too. Clicking that allows for editing the lecture and saving it again.
