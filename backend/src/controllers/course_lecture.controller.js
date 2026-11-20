@@ -2,13 +2,13 @@ import CourseLecture from '../models/course_lecture.model.js';
 import logger from '../utils/logger.js';
 
 export async function index(req, res) {
-    logger.info(`GET: /course_lectures [INDEX]`);
+    logger.info(`GET: /api/course_lecture [INDEX]`);
     const lectures = await CourseLecture.findAll();
     res.end(lectures);
 }
 
 export async function fetch(req, res) {
-    logger.info(`GET: /course_lectures/${req.params.id} [FETCH]`);
+    logger.info(`GET: /api/course_lecture/${req.params.id} [FETCH]`);
     const lecture = await CourseLecture.findById(req.params.id);
 
     if(!lecture) {
@@ -20,7 +20,7 @@ export async function fetch(req, res) {
 }
 
 export async function store(req, res) {
-    logger.info(`POST: /course_lectures [CREATE]`);
+    logger.info(`POST: /api/course_lecture [CREATE]`);
     console.log(req.body);
 
     const lecture = await CourseLecture.create(req.body);
@@ -33,7 +33,7 @@ export async function store(req, res) {
 }
 
 export async function update(req, res) {
-    logger.info(`POST: /course_lectures/${req.params.id} [UPDATE]`);
+    logger.info(`POST: /api/course_lecture/${req.params.id} [UPDATE]`);
 
     const lecture = await CourseLecture.update(req.params.id, req.body);
 
@@ -46,7 +46,7 @@ export async function update(req, res) {
 }
 
 export async function destroy(req, res) {
-    logger.info(`POST: /course_lectures/${req.params.id}/delete [DELETE]`);
+    logger.info(`POST: /api/course_lecture/${req.params.id}/delete [DELETE]`);
 
     await CourseLecture.delete(req.params.id);
     res.status(200).end();

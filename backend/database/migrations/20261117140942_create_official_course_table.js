@@ -44,5 +44,5 @@ export async function up(knex) {
  * @returns { Promise<void> }
  */
 export async function down(knex) {
-    await knex.raw(`DROP TABLE official_courses`);
+    await knex.raw(`DROP TABLE official_course`);
 }

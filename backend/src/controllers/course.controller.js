@@ -2,13 +2,13 @@ import Course from '../models/course.model.js';
 import logger from '../utils/logger.js';
 
 export async function index(req, res) {
-    logger.info(`GET: /courses [INDEX]`);
+    logger.info(`GET: /api/course [INDEX]`);
     const courses = await Course.findAll();
     res.end(courses);
 }
 
 export async function fetch(req, res) {
-    logger.info(`GET: /courses/${req.params.id} [FETCH]`);
+    logger.info(`GET: /api/course/${req.params.id} [FETCH]`);
     const course = await Course.findById(req.params.id);
 
     if(!course) {
@@ -20,7 +20,7 @@ export async function fetch(req, res) {
 }
 
 export async function fetchAllLecturesFromCourse(req, res) {
-    logger.info(`GET: /courses/${req.params.id}/lectures [FETCH]`);
+    logger.info(`GET: /api/course/${req.params.id}/lectures [FETCH]`);
 
     const [lectures] = await Course.fetchAllLecturesFromCourse(req.params.id);
 
@@ -33,7 +33,7 @@ export async function fetchAllLecturesFromCourse(req, res) {
 }
 
 export async function store(req, res) {
-    logger.info(`POST: /courses [CREATE]`);
+    logger.info(`POST: /api/course [CREATE]`);
     console.log(req.body);
 
     const course = await Course.create(req.body);
@@ -46,7 +46,7 @@ export async function store(req, res) {
 }
 
 export async function update(req, res) {
-    logger.info(`POST: /courses/${req.params.id} [UPDATE]`);
+    logger.info(`POST: /api/course/${req.params.id} [UPDATE]`);
 
     const course = await Course.update(req.params.id, req.body);
 
@@ -59,7 +59,7 @@ export async function update(req, res) {
 }
 
 export async function destroy(req, res) {
-    logger.info(`POST: /courses/${req.params.id}/delete [DELETE]`);
+    logger.info(`POST: /api/course/${req.params.id}/delete [DELETE]`);
 
     await Course.delete(req.params.id);
     res.status(200).end();

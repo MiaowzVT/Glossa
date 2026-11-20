@@ -2,13 +2,13 @@ import User from '../models/user.model.js';
 import logger from '../utils/logger.js';
 
 export async function index(req, res) {
-    logger.info(`GET: /users [INDEX]`);
+    logger.info(`GET: /api/user [INDEX]`);
     const users = await User.findAll();
-    res.end(users);
+    res.end(JSON.stringify(users));
 }
 
 export async function fetch(req, res) {
-    logger.info(`GET: /users/${req.params.id} [FETCH]`);
+    logger.info(`GET: /api/user/${req.params.id} [FETCH]`);
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -20,7 +20,7 @@ export async function fetch(req, res) {
 }
 
 export async function store(req, res) {
-    logger.info(`POST: /users [CREATE]`);
+    logger.info(`POST: /api/user [CREATE]`);
 
     if (await User.findByEmail(req.body.email)) {
       logger.error(`CREATE Operation FAILED: E-Mail ${req.body.email} already taken`);
@@ -37,7 +37,7 @@ export async function store(req, res) {
 }
 
 export async function update(req, res) {
-    logger.info(`POST: /users/${req.params.id} [UPDATE]`);
+    logger.info(`POST: /api/user/${req.params.id} [UPDATE]`);
 
     const user = await User.update(req.params.id, req.body);
     if (!user) {
@@ -49,7 +49,7 @@ export async function update(req, res) {
 }
 
 export async function destroy(req, res) {
-    logger.info(`POST: /users/${req.params.id}/delete [DELETE]`);
+    logger.info(`POST: /api/user/${req.params.id}/delete [DELETE]`);
     await User.delete(req.params.id);
     res.status(200).end();
 }

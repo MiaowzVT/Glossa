@@ -1,0 +1,65 @@
+import UGCCourseLecture from '../models/ugc_lecture.model.js';
+import logger from '../utils/logger.js';
+
+export async function index(req, res) {
+    logger.info(`GET: /api/ugc_lecture [INDEX]`);
+    const lectures = await UGCCourseLecture.findAll();
+    res.end(lectures);
+}
+
+export async function fetch(req, res) {
+    logger.info(`GET: /api/ugc_lecture/${req.params.id} [FETCH]`);
+    const lecture = await UGCCourseLecture.findById(req.params.id);
+
+    if(!lecture) {
+        logger.error(`FETCH Operation FAILED: Lecture ${req.params.id} not found`);
+        res.status(404).end();
+    }
+
+    res.status(200).end(JSON.stringify(lecture));
+}
+
+export async function fetchByCourseId(req, res) {
+    logger.info(`GET: /api/ugc_lecture/course/${req.params.id} [FETCH]`);
+    const lecture = await UGCCourseLecture.findByCourseId(req.params.id);
+
+    if(!lecture) {
+        logger.error(`FETCH Operation FAILED: No lectures for course ${req.params.id} found`);
+        res.status(404).end();
+    }
+
+    res.status(200).end(JSON.stringify(lecture));
+}
+
+export async function store(req, res) {
+    logger.info(`POST: /api/ugc_lecture [CREATE]`);
+    console.log(req.body);
+
+    const lecture = await UGCCourseLecture.create(req.body);
+    if (!lecture) {
+        logger.error(`CREATE Operation FAILED. ${req.body}`);
+        res.status(500).end();
+    }
+
+    res.status(200).end(JSON.stringify(lecture));
+}
+
+export async function update(req, res) {
+    logger.info(`POST: /api/ugc_lecture/${req.params.id} [UPDATE]`);
+
+    const lecture = await UGCCourseLecture.update(req.params.id, req.body);
+
+    if (!lecture) {
+        logger.error(`UPDATE Operation FAILED: Lecture ${req.params.id} not found`);
+        res.status(404).end();
+    }
+
+    res.status(200).end(JSON.stringify(lecture));
+}
+
+export async function destroy(req, res) {
+    logger.info(`POST: /api/ugc_lecture/${req.params.id}/delete [DELETE]`);
+
+    await UGCCourseLecture.delete(req.params.id);
+    res.status(200).end();
+}
