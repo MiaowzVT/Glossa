@@ -13,7 +13,7 @@ export async function fetch(req, res) {
 
     if(!lecture) {
         logger.error(`FETCH Operation FAILED: Lecture ${req.params.id} not found`);
-        res.status(404).end();
+        return res.status(404).end();
     }
 
     res.status(200).end(JSON.stringify(lecture));
@@ -26,7 +26,7 @@ export async function store(req, res) {
     const lecture = await CourseLecture.create(req.body);
     if (!lecture) {
         logger.error(`CREATE Operation FAILED. ${req.body}`);
-        res.status(500).end();
+        return res.status(500).end();
     }
 
     res.status(200).end(JSON.stringify(lecture));
@@ -39,7 +39,7 @@ export async function update(req, res) {
 
     if (!lecture) {
         logger.error(`UPDATE Operation FAILED: Lecture ${req.params.id} not found`);
-        res.status(404).end();
+        return res.status(404).end();
     }
 
     res.status(200).end(JSON.stringify(lecture));
