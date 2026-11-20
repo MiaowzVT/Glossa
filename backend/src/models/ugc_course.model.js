@@ -15,7 +15,7 @@ const UGCCourse = {
             [id]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async findByAuthor(id) {
@@ -24,7 +24,7 @@ const UGCCourse = {
             [id]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async fetchAllLecturesFromCourse(id) {
@@ -33,7 +33,7 @@ const UGCCourse = {
             [id]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async create({ author_id, course_name, course_description, course_language }) {

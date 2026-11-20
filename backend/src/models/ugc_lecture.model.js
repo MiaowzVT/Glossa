@@ -15,7 +15,7 @@ const UGCCourseLecture = {
             [id]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async findByCourseId(courseId) {
@@ -24,7 +24,7 @@ const UGCCourseLecture = {
             [courseId]
         );
 
-        return [rows] ?? null;
+        return rows ?? null;
     },
 
     async create({ course_id, lecture_name, lecture_contents }) {
