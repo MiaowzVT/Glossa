@@ -1,5 +1,12 @@
 package de.miaowz.glossa.ui.community
 
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,6 +30,7 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommunityOverviewScreen(onButtonClick: (CommunityScreenTarget) -> Unit) {
+    RequestLocalNetworkPermission()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         topBar = { TopAppBar(title = { Text("Community") }, scrollBehavior = scrollBehavior) },
@@ -36,6 +44,24 @@ fun CommunityOverviewScreen(onButtonClick: (CommunityScreenTarget) -> Unit) {
         }
     }
 }
+
+/**
+ * Android 17 blocks connections to private/LAN addresses (the dev backend at 10.0.2.2 or
+ * 192.168.x.x) unless the app holds ACCESS_LOCAL_NETWORK; without it, connects silently time out.
+ */
+@Composable
+private fun RequestLocalNetworkPermission() {
+    if (Build.VERSION.SDK_INT < 37) return
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    LaunchedEffect(Unit) {
+        val granted = ContextCompat.checkSelfPermission(context, ACCESS_LOCAL_NETWORK) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) launcher.launch(ACCESS_LOCAL_NETWORK)
+    }
+}
+
+private const val ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
 
 @Composable
 private fun OfficialSetsCard(onClick: () -> Unit) {

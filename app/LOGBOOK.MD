@@ -124,3 +124,16 @@ Anyway, CLAUDE did some okayish work here. The code for the Admin Panel code its
 The controller that does all the behind-the-scenes work looks fine. It reuses our `Course` and `CourseLecture` controllers for any kind of SQL logic, and there's also a lot of validation for correct datatypes happening to ensure everything is correct.
 
 The actual best part about this prompt' work: Claude actually found a few bugs in the implementation of the backend that I probably overlooked by being sleep deprived or something. So these will be checked out and fixed accordingly in the next commit.
+## November 23rd, 2026
+
+### First Prompt
+
+**Prompt**: <br>
+Trying to do unencrypted HTTP server communication. It doesn't work tho using 10.0.2.2. Please help me fix that.
+
+**Changes**: <br>
+
+- **Root cause:** not cleartext; `network_security_config.xml` already allowed `10.0.2.2`. The emulator runs Android 17 (API 37) and the app targets SDK 37, so the new *local network protection* applies: apps need the runtime permission `ACCESS_LOCAL_NETWORK` to reach private/LAN addresses (10.0.2.2, 192.168.x.x). Without it, connects silently time out (`ConnectTimeoutException` after 10 s), while `nc` from `adb shell` still connects.
+- `AndroidManifest.xml`: declares `android.permission.ACCESS_LOCAL_NETWORK`.
+- `ui/community/CommunityOverviewScreen.kt`: `RequestLocalNetworkPermission()` asks for the permission (API ≥ 37 only) when the Community tab is first shown, before Official Sets syncs.
+- Verified on the API 37 emulator: courses now load from `http://10.0.2.2:8096/`.

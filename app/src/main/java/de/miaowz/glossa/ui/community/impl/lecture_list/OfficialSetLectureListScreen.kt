@@ -42,7 +42,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import de.miaowz.glossa.data.db.OfficialCourseEntity
 import de.miaowz.glossa.data.db.OfficialCourseLectureEntity
 
 private val TAG = "Glossa::OfficialSetLectureListScreen"
