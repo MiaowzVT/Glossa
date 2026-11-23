@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,12 +27,12 @@ fun CommunityOverviewScreen(onButtonClick: (CommunityScreenTarget) -> Unit) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Community") }, scrollBehavior = scrollBehavior) },
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            OfficialSetsCard(onClick = { onButtonClick(CommunityScreenTarget.OFFICIAL_SETS_MAIN_PAGE) })
-            CommunitySetsCard(onClick = { onButtonClick(CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE) })
+            item { OfficialSetsCard(onClick = { onButtonClick(CommunityScreenTarget.OFFICIAL_SETS_MAIN_PAGE) }) }
+            item { CommunitySetsCard(onClick = { onButtonClick(CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE) }) }
         }
     }
 }
