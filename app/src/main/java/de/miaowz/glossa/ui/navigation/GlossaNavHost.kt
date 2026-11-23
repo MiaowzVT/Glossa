@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Icon
@@ -25,6 +26,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import de.miaowz.glossa.ui.community.CommunityOverviewScreen
+import de.miaowz.glossa.ui.community.CommunityScreenTarget
+import de.miaowz.glossa.ui.community.impl.OfficialSetsScreen
 import de.miaowz.glossa.ui.grammar.GrammarDetailScreen
 import de.miaowz.glossa.ui.grammar.GrammarEditorScreen
 import de.miaowz.glossa.ui.grammar.GrammarLibraryScreen
@@ -34,6 +38,8 @@ import de.miaowz.glossa.ui.vocabulary.VocabularyDetailScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyEditorScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyLibraryScreen
 import kotlinx.serialization.Serializable
+
+private val TAG: String = "Glossa::GlossaNavHost"
 
 @Serializable
 data object HomeRoute
@@ -62,11 +68,18 @@ data class VocabularyDetailRoute(val entryId: Long)
 @Serializable
 data class VocabularyEditorRoute(val entryId: Long = 0L)
 
+@Serializable
+data object CommunityOverviewRoute
+
+@Serializable
+data object OfficialSetsRoute
+
 /** Top-level destinations shown in the bottom navigation bar. */
 private enum class TopLevelDestination(val route: Any, val label: String, val icon: ImageVector) {
     Home(HomeRoute, "Home", Icons.Filled.Home),
     Grammar(GrammarLibraryRoute, "Grammar", Icons.AutoMirrored.Filled.MenuBook),
     Vocabulary(VocabularyLibraryRoute, "Vocabulary", Icons.Filled.Translate),
+    Community(CommunityOverviewRoute, "Community", Icons.Filled.Group),
 }
 
 @Composable
@@ -93,7 +106,7 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                             icon = { Icon(destination.icon, contentDescription = null) },
                             label = { Text(destination.label) },
                         )
-                        Log.i("Glossa", "Built NavigationBarItem for ${destination.label}")
+                        Log.i(TAG, "Built NavigationBarItem for ${destination.label}")
                     }
                 }
             }
@@ -163,6 +176,25 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                         }
                     },
                 )
+            }
+
+            composable<CommunityOverviewRoute> {
+                CommunityOverviewScreen(onButtonClick = { target ->
+                    when (target) {
+                        CommunityScreenTarget.OFFICIAL_SETS_MAIN_PAGE -> {
+                            navController.navigate(OfficialSetsRoute) {}
+                        }
+                        CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE -> {
+
+                        }
+                        else -> {
+                            Log.e(TAG, "Invalid target provided: $target")
+                        }
+                    }
+                })
+            }
+            composable<OfficialSetsRoute> {
+                OfficialSetsScreen()
             }
         }
     }
