@@ -1,14 +1,19 @@
-package de.miaowz.glossa.ui.community.impl
+package de.miaowz.glossa.ui.community.impl.official_set
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.toRoute
 import de.miaowz.glossa.GlossaApplication
 import de.miaowz.glossa.data.db.OfficialCourseEntity
 import de.miaowz.glossa.network.repository.OfficialCourseRepository
+import de.miaowz.glossa.ui.navigation.OfficialSetLectureListRoute
+import de.miaowz.glossa.ui.navigation.VocabularyEditorRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +30,6 @@ data class OfficialSetsUiState(
 class OfficialSetsViewModel(
     private val repository: OfficialCourseRepository
 ) : ViewModel() {
-
     private val isRefreshing = MutableStateFlow(false)
     private val error = MutableStateFlow<String?>(null)
 

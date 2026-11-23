@@ -29,7 +29,7 @@ export async function fetchAllLecturesFromCourse(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(lectures));
+    res.status(200).json(lectures);
 }
 
 export async function store(req, res) {

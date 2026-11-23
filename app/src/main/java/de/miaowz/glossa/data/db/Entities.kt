@@ -219,3 +219,14 @@ data class OfficialCourseEntity(
     val updatedAt: Long
 )
 
+@Entity(tableName = "official_course_lecture")
+data class OfficialCourseLectureEntity(
+    @PrimaryKey val id: Long,
+    val courseId: Long,
+    val lectureName: String,
+    val lectureContents: String,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+

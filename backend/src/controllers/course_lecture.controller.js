@@ -4,7 +4,7 @@ import logger from '../utils/logger.js';
 export async function index(req, res) {
     logger.info(`GET: /api/course_lecture [INDEX]`);
     const lectures = await CourseLecture.findAll();
-    res.end(JSON.stringify(lectures));
+    res.json(lectures);
 }
 
 export async function fetch(req, res) {

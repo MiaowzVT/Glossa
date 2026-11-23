@@ -9,11 +9,13 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -28,7 +30,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.miaowz.glossa.ui.community.CommunityOverviewScreen
 import de.miaowz.glossa.ui.community.CommunityScreenTarget
-import de.miaowz.glossa.ui.community.impl.OfficialSetsScreen
+import de.miaowz.glossa.ui.community.impl.lecture_list.OfficialSetLectureListScreen
+import de.miaowz.glossa.ui.community.impl.official_set.OfficialSetsScreen
 import de.miaowz.glossa.ui.grammar.GrammarDetailScreen
 import de.miaowz.glossa.ui.grammar.GrammarEditorScreen
 import de.miaowz.glossa.ui.grammar.GrammarLibraryScreen
@@ -73,6 +76,9 @@ data object CommunityOverviewRoute
 
 @Serializable
 data object OfficialSetsRoute
+
+@Serializable
+data class OfficialSetLectureListRoute(val entryId: Long = 0L)
 
 /** Top-level destinations shown in the bottom navigation bar. */
 private enum class TopLevelDestination(val route: Any, val label: String, val icon: ImageVector) {
@@ -184,9 +190,7 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                         CommunityScreenTarget.OFFICIAL_SETS_MAIN_PAGE -> {
                             navController.navigate(OfficialSetsRoute) {}
                         }
-                        CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE -> {
-
-                        }
+                        CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE -> {}
                         else -> {
                             Log.e(TAG, "Invalid target provided: $target")
                         }
@@ -194,7 +198,14 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                 })
             }
             composable<OfficialSetsRoute> {
-                OfficialSetsScreen()
+                OfficialSetsScreen(
+                    onCourseClick = { id ->
+                        navController.navigate(OfficialSetLectureListRoute(id))
+                    }
+                )
+            }
+            composable<OfficialSetLectureListRoute> {
+                OfficialSetLectureListScreen()
             }
         }
     }

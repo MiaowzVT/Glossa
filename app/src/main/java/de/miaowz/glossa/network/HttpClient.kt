@@ -1,6 +1,7 @@
 package de.miaowz.glossa.network
 
 import de.miaowz.glossa.data.dto.OfficialCourseDto
+import de.miaowz.glossa.data.dto.OfficialCourseLectureDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
@@ -33,4 +34,12 @@ val httpClient = HttpClient(OkHttp) {
 class OfficialCourseApi(private val client: HttpClient) {
     suspend fun getCourses(): List<OfficialCourseDto> =
         client.get("api/course/").body()
+}
+
+class OfficialCourseLectureApi(private val client: HttpClient) {
+    suspend fun getAllLectures(): List<OfficialCourseLectureDto> =
+        client.get("api/course_lecture").body()
+
+    suspend fun getLecturesForCourse(courseId: Long): List<OfficialCourseLectureDto> =
+        client.get("api/course/$courseId/lectures").body()
 }

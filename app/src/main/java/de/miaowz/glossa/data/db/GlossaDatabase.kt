@@ -17,8 +17,9 @@ import androidx.room.RoomDatabase
         VocabularyReviewStateEntity::class,
         VocabularyReviewLogEntity::class,
         OfficialCourseEntity::class,
+        OfficialCourseLectureEntity::class,
     ],
-    version = 5,
+    version = 6,
     autoMigrations = [
         // Adds vocabulary tables and scopes categories by CategoryType.
         AutoMigration(from = 1, to = 2),
@@ -26,6 +27,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 2, to = 3),
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
+        AutoMigration(from = 5, to = 6),
     ],
 )
 abstract class GlossaDatabase : RoomDatabase() {
@@ -33,6 +35,7 @@ abstract class GlossaDatabase : RoomDatabase() {
     abstract fun grammarDao(): GrammarDao
     abstract fun vocabularyDao(): VocabularyDao
     abstract fun officialCourseDao(): OfficialCourseDao
+    abstract fun officialCourseLectureDao(): OfficialCourseLectureDao
 
     companion object {
         fun create(context: Context): GlossaDatabase =

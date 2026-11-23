@@ -5,7 +5,9 @@ import de.miaowz.glossa.data.GrammarRepository
 import de.miaowz.glossa.data.VocabularyRepository
 import de.miaowz.glossa.data.db.GlossaDatabase
 import de.miaowz.glossa.network.OfficialCourseApi
+import de.miaowz.glossa.network.OfficialCourseLectureApi
 import de.miaowz.glossa.network.httpClient
+import de.miaowz.glossa.network.repository.OfficialCourseLectureRepository
 import de.miaowz.glossa.network.repository.OfficialCourseRepository
 
 class GlossaApplication : Application() {
@@ -24,6 +26,13 @@ class GlossaApplication : Application() {
         OfficialCourseRepository(
             api = OfficialCourseApi(httpClient),
             dao = database.officialCourseDao()
+        )
+    }
+
+    val officialCourseLectureRepository: OfficialCourseLectureRepository by lazy {
+        OfficialCourseLectureRepository(
+            api = OfficialCourseLectureApi(httpClient),
+            dao = database.officialCourseLectureDao(),
         )
     }
 }

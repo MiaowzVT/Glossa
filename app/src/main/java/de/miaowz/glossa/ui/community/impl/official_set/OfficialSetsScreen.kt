@@ -1,4 +1,4 @@
-package de.miaowz.glossa.ui.community.impl
+package de.miaowz.glossa.ui.community.impl.official_set
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
@@ -43,14 +43,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import de.miaowz.glossa.data.db.OfficialCourseEntity
-import io.ktor.util.collections.StringMap
 
 private val TAG = "Glossa::OfficialSetsScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfficialSetsScreen(
-    viewModel: OfficialSetsViewModel = viewModel(factory = OfficialSetsViewModel .Factory),
+    viewModel: OfficialSetsViewModel = viewModel(factory = OfficialSetsViewModel.Factory),
     onCourseClick: (Long) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
