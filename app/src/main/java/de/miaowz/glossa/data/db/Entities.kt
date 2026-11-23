@@ -207,3 +207,15 @@ data class VocabularyReviewLogEntity(
     val rating: Rating,
     val reviewedAt: Long,
 )
+
+@Entity(tableName = "official_course")
+data class OfficialCourseEntity(
+    @PrimaryKey val id: Long,
+    val courseName: String,
+    val courseDescription: String,
+    val courseLevel: String,
+    val courseLanguage: String,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+

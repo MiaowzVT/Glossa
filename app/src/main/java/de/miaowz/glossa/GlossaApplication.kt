@@ -4,6 +4,9 @@ import android.app.Application
 import de.miaowz.glossa.data.GrammarRepository
 import de.miaowz.glossa.data.VocabularyRepository
 import de.miaowz.glossa.data.db.GlossaDatabase
+import de.miaowz.glossa.network.OfficialCourseApi
+import de.miaowz.glossa.network.httpClient
+import de.miaowz.glossa.network.repository.OfficialCourseRepository
 
 class GlossaApplication : Application() {
     // Manual dependency container; created lazily so tests and previews don't open the database.
@@ -15,5 +18,12 @@ class GlossaApplication : Application() {
 
     val vocabularyRepository: VocabularyRepository by lazy {
         VocabularyRepository(database.vocabularyDao(), database.taxonomyDao())
+    }
+
+    val officialCourseRepository: OfficialCourseRepository by lazy {
+        OfficialCourseRepository(
+            api = OfficialCourseApi(httpClient),
+            dao = database.officialCourseDao()
+        )
     }
 }
