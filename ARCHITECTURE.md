@@ -4,8 +4,10 @@ Glossa is a single-module Android app for building a personal **grammar library*
 **vocabulary library** for language learning. Grammar entries have a title, a rich-text description
 and example sentences; vocabulary entries have a term, a meaning, rich-text notes and example
 sentences. Both are categorized by **Language → Category** and support **furigana** (ruby text)
-everywhere. A bottom navigation bar switches between Home, Grammar and Vocabulary. Vocabulary is
-practiced with flashcards scheduled by **FSRS** (spaced repetition), started from Home.
+everywhere. A bottom navigation bar switches between Home, Grammar, Vocabulary and Community.
+Vocabulary is practiced with flashcards scheduled by **FSRS** (spaced repetition), started from Home.
+The Community tab reads **official courses** and their lectures from the Glossa backend
+(`backend/`, Node/Express) and caches them in Room for offline reading.
 
 This document is the working reference for extending the code base. It describes the layers, the
 data formats that must stay stable, the invariants each component relies on, and step-by-step
@@ -23,7 +25,8 @@ stated otherwise.
 | Navigation     | Navigation Compose 2.10 with **type-safe `@Serializable` routes**      |
 | State          | `ViewModel` + `StateFlow`, collected with `collectAsStateWithLifecycle` |
 | Persistence    | Room 2.8 (KSP), schema exported to `app/schemas/`                      |
-| Serialization  | kotlinx.serialization JSON (routes + `RichText` storage)               |
+| Serialization  | kotlinx.serialization JSON (routes, `RichText` storage, backend DTOs)  |
+| Networking     | Ktor client 3.6 (OkHttp engine), bodies decoded as text (§4.6)         |
 | DI             | **None** — manual container in `GlossaApplication`                    |
 | SDK            | `minSdk 35`, `targetSdk/compileSdk 37`                                  |
 | Build          | AGP 9.4, version catalog `gradle/libs.versions.toml`, configuration cache on |
@@ -38,7 +41,7 @@ Package / application id: `de.miaowz.glossa`.
 ┌──────────────────────────────────────────────────────────────────────────┐
 │ ui/                     Compose screens + ViewModels (one package/feature)│
 │   navigation/           NavHost, bottom bar, @Serializable routes         │
-│   home/ grammar/ vocabulary/ review/   common/ (shared UI)   theme/        │
+│   home/ grammar/ vocabulary/ review/ community/  common/ (shared UI) theme/│
 ├───────────────────────────────┬──────────────────────────────────────────┤
 │ richtext/   (reusable widget) │ ruby/     (reusable widget)               │
 │ RichText model, editor View,  │ {base|reading} markup, RubySpan,          │
@@ -46,6 +49,8 @@ Package / application id: `de.miaowz.glossa`.
 ├───────────────────────────────┴──────────────────────────────────────────┤
 │ data/        GrammarRepository, VocabularyRepository (+ Taxonomy)  ←→ model│
 │   db/                   Room: entities, DAOs, database                    │
+│   dto/                  backend JSON rows (official courses / lectures)   │
+│ network/     Ktor client + APIs; repository/ Official*Repository ←→ model │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ srs/                    FSRS-5 algorithm + day-based scheduling (pure JVM) │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -53,8 +58,11 @@ Package / application id: `de.miaowz.glossa`.
 
 Dependency rules (keep these when adding code):
 
-- `ui/*` depends on `data` (repository + `data.model`), `richtext`, `ruby`, and `srs.Rating`.
-  **UI never touches `data.db` entities or the DAO.**
+- `ui/*` depends on `data` (repository + `data.model`), `network.repository` (official-course
+  repositories, which also return `data.model` types), `richtext`, `ruby`, and `srs.Rating`.
+  **UI never touches `data.db` entities, DTOs, DAOs or the Ktor client.**
+- `network` depends on `data.db` (DAOs/entities), `data.dto`, `data.model` and `richtext`
+  (to decode lecture contents). It knows nothing about Compose.
 - `data` depends on `richtext.RichText` (as a value type, for encode/decode),
   `ruby.RubyMarkup` (for plain-text extraction) and `srs` (scheduling). It does not depend on
   Android Views.
@@ -62,7 +70,7 @@ Dependency rules (keep these when adding code):
 - `richtext` and `ruby` are feature-agnostic widgets. They know nothing about grammar entries.
   `richtext` uses `ruby.RubyMarkup` (for `insertRuby`), `ruby` uses `richtext.RichText`
   (for rendering). That mutual dependency is intentional and limited to these two packages.
-- Feature packages under `ui/` (`home`, `grammar`, `vocabulary`, `review`) don't import each other; they
+- Feature packages under `ui/` (`home`, `grammar`, `vocabulary`, `review`, `community`) don't import each other; they
   communicate only via navigation callbacks. Code shared between features lives in `ui/common/`,
   which must not import feature packages.
 
@@ -72,9 +80,9 @@ Dependency rules (keep these when adding code):
 
 | File | Role |
 |------|------|
-| `GlossaApplication.kt` | Manual dependency container. Holds one `database` and `grammarRepository` / `vocabularyRepository`, all `lazy` (so tests/previews don't open the DB). |
+| `GlossaApplication.kt` | Manual dependency container. Holds one `database` and `grammarRepository` / `vocabularyRepository` / `officialCourseRepository` / `officialCourseLectureRepository`, all `lazy` (so tests/previews don't open the DB). The Ktor `httpClient` is a top-level `val` in `network/HttpClient.kt`. |
 | `MainActivity.kt` | `enableEdgeToEdge()`, `GlossaTheme { GlossaNavHost() }`. `windowSoftInputMode="adjustResize"` in the manifest. |
-| `ui/GlossaViewModelFactory.kt` | `CreationExtras.grammarRepository` / `.vocabularyRepository` extensions — the *only* bridge from ViewModels to the container. |
+| `ui/GlossaViewModelFactory.kt` | `CreationExtras.grammarRepository` / `.vocabularyRepository` / `.officialCourseRepository` / `.officialCourseLectureRepository` extensions — the *only* bridge from ViewModels to the container. |
 
 ViewModels are created inline in the screen's default parameter:
 
@@ -92,7 +100,7 @@ without a deliberate decision — the pattern is meant to stay this small.
 
 ## 4. Data layer
 
-### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **3**, file `glossa.db`)
+### 4.1 Schema (Room, `data/db/Entities.kt`, DB version **6**, file `glossa.db`)
 
 ```
 languages            categories                    grammar_entries                     example_sentences
@@ -122,6 +130,14 @@ entryId PK, FK→vocabulary_entries CASCADE          id PK
 stability, difficulty (REAL)                       entryId FK→vocabulary_entries CASCADE
 due (epoch ms, indexed), lastReview (epoch ms)     rating (Rating enum name)
 reps, lapses                                       reviewedAt (epoch ms)
+
+official_course                                    official_course_lecture
+───────────────                                    ───────────────────────
+id PK (backend id)                                 id PK (backend id)
+courseName (String, ruby markup)                   courseId (backend course id, no FK, no index)
+courseDescription, courseLevel, courseLanguage     lectureName (String, ruby markup)
+createdAt, updatedAt (epoch ms, 0 = unknown)       lectureContents (RichText JSON, as sent)
+                                                   createdAt, updatedAt (epoch ms, 0 = unknown)
 ```
 
 - **Languages are shared** by both libraries; **categories are scoped per library** by
@@ -135,6 +151,8 @@ reps, lapses                                       reviewedAt (epoch ms)
   is always due. Every answer is also appended to `vocabulary_review_logs` (not read yet; kept for
   statistics and future FSRS parameter optimization). `Rating` is stored by enum name — never
   rename the constants.
+- The `official_*` tables are a **read-only cache of the backend** (ids are the backend's). They
+  are replaced on every sync (§4.6) and never edited locally.
 - Names are unique **case-insensitively** (`COLLATE NOCASE`) — `getOrCreate*` relies on this.
 - Deleting a language with entries fails (`RESTRICT`); deleting a category nulls the entries'
   `categoryId`. There is currently no UI to delete languages/categories.
@@ -148,6 +166,10 @@ reps, lapses                                       reviewedAt (epoch ms)
   count as due), `getDueEntries(now)` (reviewed cards by oldest due first, then new cards by
   creation), `getReviewState`, and `saveReview(state, log)` (upsert state + insert log, one
   transaction).
+- `OfficialCourseDao` / `OfficialCourseLectureDao`: `observe*` flows for the UI (courses; one
+  course; lectures of a course ordered by `id`, i.e. creation order; one lecture) and sync writes
+  `replaceAll(courses)`, `upsertCourses`, `deleteCourse`, `replaceLecturesForCourse(courseId, …)`
+  (one transaction; other courses' lectures are untouched).
 - `saveEntry(entry, examples)` is the single write path for entries: insert-or-update the entry,
   **delete all its examples and re-insert** them with `position = index`. Examples have no stable
   identity across saves.
@@ -197,9 +219,44 @@ History: `1 → 2` is an `@AutoMigration` (new vocabulary tables; `categories` g
 default `'GRAMMAR'` and a new unique index, which Room does by rebuilding the table). Room enables
 `PRAGMA foreign_keys` only in `onOpen`, after migrations, so table rebuilds don't fire
 `ON DELETE` actions. `2 → 3` is an `@AutoMigration` adding the two vocabulary review tables
-(existing vocabulary becomes new cards).
+(existing vocabulary becomes new cards). `3 → 4` adds `official_course`, `4 → 5` changes nothing
+in the schema, `5 → 6` adds `official_course_lecture` (all `@AutoMigration`s).
 
-### 4.6 Spaced repetition (`srs/`)
+### 4.6 Official courses (`network/`, `data/dto/`, `data/model/OfficialCourse.kt`)
+
+The backend (`backend/`, not part of the app build) serves curated courses written in its admin
+panel. Endpoints used by the app (base URL `BASE_URL` in `network/HttpClient.kt`, emulator host
+`10.0.2.2:8096`; cleartext hosts are whitelisted in `res/xml/network_security_config.xml`):
+
+| Endpoint | Response | Used by |
+|----------|----------|---------|
+| `GET /api/course` | array of `{id, course_name, course_description, course_level, course_language, created_at, updated_at}` | `OfficialCourseApi.getCourses` |
+| `GET /api/course/:id` | **an array with 0..1 course** (backend bug), possibly fixed to an object later; `[]` = not found | `OfficialCourseApi.getCourse` |
+| `GET /api/course/:id/lectures` | array of `{id, course_id, lecture_name, lecture_contents, created_at, updated_at}` | `OfficialCourseLectureApi.getLecturesForCourse` |
+
+Invariants:
+
+- **Bodies are read with `bodyAsText()` and decoded by `OfficialCourseJson`**, not by Ktor content
+  negotiation: the backend does not always send `Content-Type: application/json`
+  (`res.end(JSON.stringify(…))`). `decodeCourse` accepts object *and* array. The decoder ignores
+  unknown keys and maps `null` to defaults; timestamps (`created_at`/`updated_at` are nullable in
+  the lecture table) go through `parseBackendTimestamp` (ISO-8601 or SQL datetime as UTC, else 0).
+- `lecture_contents` is `RichText` JSON written by the admin panel (§5) and stored unchanged;
+  course/lecture names and course descriptions are strings with ruby markup.
+- `expectSuccess = true`: 4xx/5xx throw `ResponseException`; malformed bodies throw
+  `SerializationException`; connection problems throw `IOException`s. The repositories don't catch —
+  ViewModels map failures with `ui/community/CommunitySync.kt` → `SyncError`.
+- **Room is the source of truth for the UI.** `OfficialCourseRepository.refresh()` replaces all
+  cached courses; `refreshCourse(id)` updates one course and returns `false` (dropping it locally)
+  when the backend no longer has it; `OfficialCourseLectureRepository.refreshLectures(courseId)`
+  replaces that course's lectures. Repositories map entities to `OfficialCourse` /
+  `OfficialLecture` (`RichText.decode` for contents). Everything stays readable offline.
+- Tests and the app share `HttpClientConfig.glossaDefaults()` (base URL, `expectSuccess`), so a
+  `MockEngine` client behaves like the real one.
+- Android 17 (API 37) needs the runtime permission `ACCESS_LOCAL_NETWORK` for LAN/emulator hosts;
+  `CommunityOverviewScreen` requests it.
+
+### 4.7 Spaced repetition (`srs/`)
 
 | File | Role |
 |------|------|
@@ -343,9 +400,13 @@ Notes:
 | `VocabularyLibraryRoute` (tab) | `VocabularyLibraryScreen` | — |
 | `VocabularyDetailRoute(entryId)` | `VocabularyDetailScreen` | entry id |
 | `VocabularyEditorRoute(entryId = 0)` | `VocabularyEditorScreen` | `0` = create new |
+| `CommunityOverviewRoute` (tab) | `CommunityOverviewScreen` | — |
+| `OfficialSetsRoute` | `OfficialSetsScreen` (course list) | — |
+| `OfficialSetLectureListRoute(entryId)` | `OfficialSetLectureListScreen` | **course** id |
+| `OfficialLectureDetailRoute(lectureId)` | `OfficialLectureDetailScreen` | lecture id |
 
 - **Bottom navigation:** `GlossaNavHost` wraps the `NavHost` in an outer `Scaffold` whose
-  `NavigationBar` lists `TopLevelDestination` (Home, Grammar, Vocabulary). The bar is shown only
+  `NavigationBar` lists `TopLevelDestination` (Home, Grammar, Vocabulary, Community). The bar is shown only
   while a top-level route is current; detail and editor screens are full-screen.
   Tab switches use `popUpTo(start) { saveState = true }` + `launchSingleTop` + `restoreState`, so
   each tab keeps its state (scroll, filters).
@@ -354,7 +415,9 @@ Notes:
   themselves, and their bottom inset is consumed by the bar when it is visible.
 - Screens receive navigation as lambdas (`onAddEntry`, `onOpenEntry`, `onEdit`, `onBack`,
   `onSaved`); they never get the `NavController`.
-- ViewModels read args with `savedStateHandle.toRoute<XRoute>()`.
+- ViewModels read args with `savedStateHandle.toRoute<XRoute>()`. Variant used by the community
+  ViewModels (so they are JVM-testable without Android's `SavedStateHandle`): the `viewModel { }`
+  initializer calls `createSavedStateHandle().toRoute<XRoute>()` and passes the id as a `Long`.
 - After saving a **new** entry, the editor is replaced by its detail screen
   (`popUpTo<XEditorRoute> { inclusive = true }`); after editing, it just pops.
 
@@ -383,6 +446,25 @@ Every feature package contains `XScreen.kt` and (unless trivial) `XViewModel.kt`
     read-only `ExamplesSection`, `TextFieldValue.replaceSelection` / `selectedText`.
 
 ### 8.3 Screens
+
+**Community** (`ui/community/`) — `CommunityOverviewScreen` (tab) has two cards: Official Sets
+(→ `OfficialSetsRoute`) and Community Sets (not implemented yet, `CommunityScreenTarget`).
+Official courses follow the vocabulary screens' look (cards, typography, spacing, chips):
+- `impl/official_set/` — course list. `OfficialSetsViewModel` combines the cached courses with
+  `isRefreshing`/`error` and groups them with the pure `courseSections()` (one section per language,
+  matched case-insensitively, empty language last; courses by `stripToBase(name)`). Card: name
+  (`RubyText`, `titleMedium`), level `AssistChip`, description (3 lines). Syncs on open.
+- `impl/lecture_list/` — header like the vocabulary detail (name `headlineMedium`, language/level
+  chips, description, lecture count), then numbered lecture cards with a 2-line `RubyText(RichText)`
+  preview. Refresh = `refreshCourse(id)` then, if the course still exists, `refreshLectures(id)`.
+- `impl/lecture_detail/` — `OfficialLectureDetailViewModel` (same file) observes one cached lecture
+  (`Loading/NotFound/Loaded`); name `headlineMedium`, contents `RubyText(RichText)` `bodyLarge`.
+  No network call: lectures are synced by the list.
+- Shared states (`CommunityComponents.kt`): pull-to-refresh on every list (`PullToRefreshBox`;
+  the centered `CircularProgressIndicator` is used instead while nothing is cached), empty and
+  first-sync error states as `EmptyLibrary` inside a `LazyColumn` (`CommunityMessage`, so
+  pull-to-refresh works), and a dismissible `SyncErrorCard` (`errorContainer`) above cached content.
+  Errors are UI state: `SyncError` (`Network`, `Server`, `InvalidData`) carries a `@StringRes`.
 
 **Home** (`ui/home/HomeScreen.kt`, `HomeViewModel` in the same file) — a repetition card with the
 number of due vocabulary cards (`dueCount`) and a "Start repetition" button (disabled when nothing is
@@ -434,9 +516,13 @@ observes one entry; edit and delete (with confirmation) actions.
 
 - `ui/theme/` is still the Android Studio template (purple scheme, dynamic color). `Build.VERSION`
   check in `Theme.kt` is always true given `minSdk 35`.
-- **User-facing strings are currently hard-coded in Compose**, not in `res/values/strings.xml`.
-  Follow the existing convention unless a localization pass is planned; if so, migrate whole
-  screens at once.
+- **User-facing strings go into `res/values/strings.xml`** and are read with `stringResource` /
+  `pluralStringResource` (decided 2026-11-23). Keys are prefixed by feature
+  (`community_official_sets_title`, …). ViewModels never build user-visible strings: errors and
+  messages are UI state (an enum or `@StringRes Int`).
+- Migrated so far: all `ui/community/**` screens. Home, Grammar, Vocabulary, Review and the
+  bottom-bar labels in `GlossaNavHost` are still hard-coded; new or touched screens use resources,
+  and an existing screen is migrated **as a whole** (never half a screen).
 
 ---
 
@@ -450,6 +536,12 @@ observes one entry; edit and delete (with confirmation) actions.
 | JVM unit | `app/src/test/…/srs/FsrsTest.kt` | FSRS-5 initial state, retrievability, intervals, stability/difficulty updates |
 | JVM unit | `app/src/test/…/srs/SchedulerTest.kt` | due dates at start of local day, lapses, same-day and calendar-day handling |
 | JVM unit | `app/src/test/…/ui/review/ReviewSessionTest.kt` | session queue (retry once), counts, percentage |
+| JVM unit | `app/src/test/…/network/OfficialCourseJsonTest.kt` | backend JSON samples (`BackendSamples.kt`): all fields, array-or-object course, `[]`, nulls, unknown keys, malformed |
+| JVM unit | `app/src/test/…/network/OfficialCourseApiTest.kt` | Ktor `MockEngine`: paths, no/HTML content type, HTTP errors |
+| JVM unit | `app/src/test/…/data/dto/OfficialCourseDtoTest.kt` | timestamp parsing fallbacks, DTO → entity mapping |
+| JVM unit | `app/src/test/…/network/repository/*RepositoryTest.kt` | fake DAOs (`FakeOfficialCourseDaos.kt`) + `MockBackend`: replace/keep cache, per-course lectures, RichText decoding, removed course |
+| JVM unit | `app/src/test/…/ui/community/SyncErrorTest.kt` | failure → `SyncError` mapping, cancellation rethrown |
+| JVM unit | `app/src/test/…/ui/community/impl/*ViewModelTest.kt` | course list / lecture list / lecture detail states: loaded, empty, offline, server error, invalid data, dismiss, retry, sections |
 | Instrumented | `app/src/androidTest/…/richtext/SpanOpsTest.kt` | span merge/split/coverage (needs Android `Spannable`) |
 | Instrumented | `app/src/androidTest/…/ruby/RubySpanTest.kt` | markup → spans, style splitting, metrics |
 | Instrumented | `app/src/androidTest/…/data/GrammarRepositoryTest.kt` | in-memory Room: get-or-create, save/update with examples |
@@ -464,9 +556,11 @@ Commands (from the repo root):
 ```
 
 Guidelines: pure Kotlin logic (parsing, filtering, mapping) → JVM tests; anything using
-`android.text.*` or Room → `androidTest`. Repository tests use
-`Room.inMemoryDatabaseBuilder` and the injectable `clock`. There are no ViewModel, Compose UI or
-migration tests yet (a `MigrationTestHelper` test would need the `room-testing` dependency and the
+`android.text.*` or Room → `androidTest`. Networking code is tested on the JVM with
+`ktor-client-mock` (`MockBackend` in `app/src/test/…/network/`); ViewModels with
+`kotlinx-coroutines-test` and `MainDispatcherRule` — keep `android.util.Log` out of ViewModels so
+they run on the JVM. Repository tests use
+`Room.inMemoryDatabaseBuilder` and the injectable `clock`. There are no Compose UI or migration tests yet, and ViewModel tests only for `ui/community` (a `MigrationTestHelper` test would need the `room-testing` dependency and the
 schemas as androidTest assets).
 
 ---
@@ -511,6 +605,16 @@ constant), a `lazy` instance in `GlossaApplication`, a `CreationExtras` accessor
 screen recipe using `ui/common` (`libraryState` + `LibraryKeys`, `LibraryList`, `CategoryPickers`,
 `ExampleEditor`/`ExamplesSection`). Add its count to `HomeScreen` if relevant.
 
+### Read a new backend endpoint
+1. Add a `@Serializable` DTO in `data/dto/` with `@SerialName` for the snake_case columns; give
+   every field that may be `NULL` or missing a default / nullable type, and map timestamps with
+   `parseBackendTimestamp`.
+2. Add a decoder to `OfficialCourseJson` (or a sibling object) and a method on the API class that
+   reads `bodyAsText()` — don't rely on the response's `Content-Type`.
+3. Cache the result in Room (entity + DAO, DB version + migration, §4.5) and expose `data.model`
+   types from the repository; the UI never sees DTOs or entities.
+4. Add a sample body to `BackendSamples.kt` and tests for decoder, API (`MockBackend`) and repository.
+
 ### Use furigana in a plain `String` field
 Store the string with markup, render with `RubyText(text: String)`, offer `FuriganaDialog` and
 insert `RubyMarkup.format(base, reading)` at the selection (see the title field handling in
@@ -530,7 +634,12 @@ sorting and search.
   helpers.
 - `RichTextToolbar`'s color palettes store absolute ARGB values; they're mid-tones chosen to read
   on both light and dark themes.
-- Theme is the template default; strings are not externalized (see §8.4).
+- Theme is the template default; strings are externalized only for `ui/community/**` (see §8.4).
+- Official courses: no live test against the backend in CI; `BASE_URL` is hard-coded to the emulator
+  host. `official_course_lecture.courseId` has no index (fine for small courses; adding one needs a
+  DB version bump). The `ktor-client-content-negotiation` / `ktor-serialization-kotlinx-json`
+  dependencies are unused since bodies are decoded as text (§4.6). Lecture order is backend id
+  order (the backend has no position column). Community Sets are not implemented.
 - Spaced repetition: no daily limit for new cards (all new vocabulary is due at once), FSRS
   parameters are the defaults (not optimized from `vocabulary_review_logs`), and the session is not
   restored after process death (answers already given are saved). Grammar has no repetition yet;
