@@ -16,7 +16,7 @@ export async function fetch(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function fetchAllLecturesFromCourse(req, res) {
@@ -42,7 +42,7 @@ export async function store(req, res) {
         return res.status(500).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function update(req, res) {
@@ -55,7 +55,7 @@ export async function update(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function destroy(req, res) {
