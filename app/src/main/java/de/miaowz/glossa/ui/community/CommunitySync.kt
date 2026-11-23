@@ -6,7 +6,7 @@ import io.ktor.client.plugins.ResponseException
 import kotlinx.coroutines.CancellationException
 
 /** Why syncing with the backend failed; the screen shows [message]. */
-enum class SyncError(@StringRes val message: Int) {
+enum class SyncError(@get:StringRes val message: Int) {
     /** No connection, timeout, DNS, ... */
     Network(R.string.community_error_network),
 
