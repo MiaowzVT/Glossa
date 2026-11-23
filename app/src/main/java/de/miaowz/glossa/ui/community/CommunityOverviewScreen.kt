@@ -25,7 +25,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +35,7 @@ fun CommunityOverviewScreen(onButtonClick: (CommunityScreenTarget) -> Unit) {
     RequestLocalNetworkPermission()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Community") }, scrollBehavior = scrollBehavior) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.community_overview_title)) }, scrollBehavior = scrollBehavior) },
     ) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -73,9 +75,9 @@ private fun OfficialSetsCard(onClick: () -> Unit) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Official Sets", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.community_official_sets_card_title), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Read and Download official courses - curated and effective",
+                        stringResource(R.string.community_official_sets_card_text),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -94,9 +96,9 @@ private fun CommunitySetsCard(onClick: () -> Unit) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Community Sets", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.community_sets_card_title), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Sets created by the community - anything you need, at any time.",
+                        stringResource(R.string.community_sets_card_text),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }

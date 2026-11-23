@@ -44,9 +44,6 @@ class OfficialCourseApi(private val client: HttpClient) {
 }
 
 class OfficialCourseLectureApi(private val client: HttpClient) {
-    suspend fun getAllLectures(): List<OfficialCourseLectureDto> =
-        OfficialCourseJson.decodeLectures(client.get("api/course_lecture").bodyAsText())
-
     suspend fun getLecturesForCourse(courseId: Long): List<OfficialCourseLectureDto> =
         OfficialCourseJson.decodeLectures(client.get("api/course/$courseId/lectures").bodyAsText())
 }

@@ -30,6 +30,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import de.miaowz.glossa.ui.community.CommunityOverviewScreen
 import de.miaowz.glossa.ui.community.CommunityScreenTarget
+import de.miaowz.glossa.ui.community.impl.lecture_detail.OfficialLectureDetailScreen
 import de.miaowz.glossa.ui.community.impl.lecture_list.OfficialSetLectureListScreen
 import de.miaowz.glossa.ui.community.impl.official_set.OfficialSetsScreen
 import de.miaowz.glossa.ui.grammar.GrammarDetailScreen
@@ -77,8 +78,12 @@ data object CommunityOverviewRoute
 @Serializable
 data object OfficialSetsRoute
 
+/** Lectures of the official course [entryId]. */
 @Serializable
 data class OfficialSetLectureListRoute(val entryId: Long = 0L)
+
+@Serializable
+data class OfficialLectureDetailRoute(val lectureId: Long)
 
 /** Top-level destinations shown in the bottom navigation bar. */
 private enum class TopLevelDestination(val route: Any, val label: String, val icon: ImageVector) {
@@ -199,13 +204,18 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
             }
             composable<OfficialSetsRoute> {
                 OfficialSetsScreen(
-                    onCourseClick = { id ->
-                        navController.navigate(OfficialSetLectureListRoute(id))
-                    }
+                    onBack = { navController.popBackStack() },
+                    onOpenCourse = { id -> navController.navigate(OfficialSetLectureListRoute(id)) },
                 )
             }
             composable<OfficialSetLectureListRoute> {
-                OfficialSetLectureListScreen()
+                OfficialSetLectureListScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenLecture = { id -> navController.navigate(OfficialLectureDetailRoute(id)) },
+                )
+            }
+            composable<OfficialLectureDetailRoute> {
+                OfficialLectureDetailScreen(onBack = { navController.popBackStack() })
             }
         }
     }
