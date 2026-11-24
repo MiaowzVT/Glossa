@@ -25,7 +25,8 @@ If you wish to expose the server on a different port, change line 13 in `src/ind
 1. Open Android Studio
 2. File -> Open and select the cloned project
 3. Let Android Studio configure the project
-4. Run the app in the emulator or create a clean build and install the APK to your device
+4. Set `BASE_URL` in `de.miaowz.glossa.network.HttpClient` to your machine's IP. Make sure the device running the app is in the same network as the server. The default `http://10.0.0.2:8096/` is the default IP for `localhost` on the Device Simulator.
+5. Run the app in the emulator or create a clean build and install the APK to your device
 
 ### Creating sample content
 
