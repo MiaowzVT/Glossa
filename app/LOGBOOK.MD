@@ -126,7 +126,7 @@ The controller that does all the behind-the-scenes work looks fine. It reuses ou
 The actual best part about this prompt' work: Claude actually found a few bugs in the implementation of the backend that I probably overlooked by being sleep deprived or something. So these will be checked out and fixed accordingly in the next commit.
 ## November 23rd, 2026
 
-### First Prompt
+### First Prompt (Commit: 5dcba70)
 
 **Prompt**: <br>
 Trying to do unencrypted HTTP server communication. It doesn't work tho using 10.0.2.2. Please help me fix that.
@@ -138,7 +138,11 @@ Trying to do unencrypted HTTP server communication. It doesn't work tho using 10
 - `ui/community/CommunityOverviewScreen.kt`: `RequestLocalNetworkPermission()` asks for the permission (API ≥ 37 only) when the Community tab is first shown, before Official Sets syncs.
 - Verified on the API 37 emulator: courses now load from `http://10.0.2.2:8096/`.
 
-### Second Prompt (scheduled overnight task, branch `dev`)
+**Reflection**:
+
+Claude built a function that asks for the user's permission to access the local network.  It correctly only fires for SDK Versions >= 37, as required. The rest of the permission request logic looks fine. Putting the actual check upon first clicking the Community tab makes perfect sense. A user shouldn't be asked to give network permission if they don't use network features. At the same time, it should be asked before fetching network data for the first time, so putting it on the main Community tab is the best possible location.
+
+### Second Prompt (scheduled overnight task, branch `dev`) (Commits 1a512a5 to 9066220 on `Kurse` branch)
 
 **Prompt**: <br>
 Work autonomously on Glossa (CLAUDE.md and ARCHITECTURE.md are the top rule). On `dev`, local commits only:
