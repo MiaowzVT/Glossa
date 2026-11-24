@@ -90,7 +90,7 @@ private fun ReviewCard(state: HomeUiState, onStartReview: () -> Unit) {
             }
             Button(onClick = onStartReview, enabled = (due ?: 0) > 0, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                Text("Start repetition", Modifier.padding(start = 8.dp))
+                Text(stringResource(R.string.start_repitition), Modifier.padding(start = 8.dp))
             }
         }
     }

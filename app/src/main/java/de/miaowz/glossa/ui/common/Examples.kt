@@ -63,7 +63,7 @@ fun ExampleEditor(
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Example ${index + 1}",
+                    stringResource(R.string.example_num, index + 1),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f),
                 )

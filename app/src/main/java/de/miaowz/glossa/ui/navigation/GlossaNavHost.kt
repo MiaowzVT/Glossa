@@ -1,6 +1,7 @@
 package de.miaowz.glossa.ui.navigation
 
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -28,6 +30,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import de.miaowz.glossa.R
 import de.miaowz.glossa.ui.community.CommunityOverviewScreen
 import de.miaowz.glossa.ui.community.CommunityScreenTarget
 import de.miaowz.glossa.ui.community.impl.lecture_detail.OfficialLectureDetailScreen
@@ -86,11 +89,11 @@ data class OfficialSetLectureListRoute(val entryId: Long = 0L)
 data class OfficialLectureDetailRoute(val lectureId: Long)
 
 /** Top-level destinations shown in the bottom navigation bar. */
-private enum class TopLevelDestination(val route: Any, val label: String, val icon: ImageVector) {
-    Home(HomeRoute, "Home", Icons.Filled.Home),
-    Grammar(GrammarLibraryRoute, "Grammar", Icons.AutoMirrored.Filled.MenuBook),
-    Vocabulary(VocabularyLibraryRoute, "Vocabulary", Icons.Filled.Translate),
-    Community(CommunityOverviewRoute, "Community", Icons.Filled.Group),
+private enum class TopLevelDestination(val route: Any, @StringRes val labelRes: Int, val icon: ImageVector) {
+    Home(HomeRoute, R.string.home, Icons.Filled.Home),
+    Grammar(GrammarLibraryRoute, R.string.grammar, Icons.AutoMirrored.Filled.MenuBook),
+    Vocabulary(VocabularyLibraryRoute, R.string.vocabulary, Icons.Filled.Translate),
+    Community(CommunityOverviewRoute, R.string.community, Icons.Filled.Group),
 }
 
 @Composable
@@ -111,13 +114,14 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
             if (selected != null) {
                 NavigationBar {
                     TopLevelDestination.entries.forEach { destination ->
+                        val label = stringResource(destination.labelRes)
                         NavigationBarItem(
                             selected = destination == selected,
                             onClick = { navController.navigateToTopLevel(destination) },
                             icon = { Icon(destination.icon, contentDescription = null) },
-                            label = { Text(destination.label) },
+                            label = { Text(label) },
                         )
-                        Log.i(TAG, "Built NavigationBarItem for ${destination.label}")
+                        Log.i(TAG, "Built NavigationBarItem for $label")
                     }
                 }
             }

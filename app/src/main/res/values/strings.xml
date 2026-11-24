@@ -63,6 +63,7 @@
     <string name="rich_text_sentence_placeholder">Sentence</string>
     <string name="rich_text_translation_note_placeholder">Translation or notes (optional)</string>
     <string name="text_examples">Examples</string>
+    <string name="example_num">Example %d</string>
 
     <!-- LibraryList.kt -->
     <string name="no_entries_match_filters">No entries match your filters</string>
@@ -108,6 +109,10 @@
         <item quantity="one">%d Example</item>
         <item quantity="other">%d Examples</item>
     </plurals>
+
+    <!-- GrammarEditorViewModel.kt -->
+    <string name="error_title_required">Enter a title</string>
+    <string name="error_language_required">Enter a language</string>
 
     <!-- HomeScreen.kt -->
     <string name="repitition">Repitition</string>
@@ -166,4 +171,7 @@
     <string name="search_vocabulary">Search vocabulary</string>
     <string name="vocabulary_empty">Your vocabulary is empty</string>
     <string name="vocabulary_empty_detail">Tap + to add your first word, with its meaning, furigana, notes and example sentences.</string>
+
+    <!-- VocabularyEditorViewModel.kt -->
+    <string name="error_enter_word_or_phrase">Enter a word or phrase.</string>
 </resources>

@@ -167,7 +167,7 @@ fun VocabularyEditorScreen(
                     label = { Text(stringResource(R.string.word_or_phrase)) },
                     placeholder = { Text(stringResource(R.string.word_or_phrase_placeholder)) },
                     isError = state.termError != null,
-                    supportingText = state.termError?.let { { Text(it) } },
+                    supportingText = state.termError?.let { { Text(stringResource(it)) } },
                     singleLine = true,
                     trailingIcon = {
                         IconButton(onClick = { furiganaTarget = FuriganaTarget.Term }) {
@@ -194,7 +194,7 @@ fun VocabularyEditorScreen(
                     options = options,
                     languageId = state.languageId,
                     categoryId = state.categoryId,
-                    languageError = state.languageError,
+                    languageError = state.languageError?.let { stringResource(it) },
                     onSelectLanguage = viewModel::selectLanguage,
                     onSelectCategory = viewModel::selectCategory,
                     onCreateLanguage = viewModel::createLanguage,
