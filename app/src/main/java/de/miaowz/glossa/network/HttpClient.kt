@@ -5,12 +5,14 @@ import de.miaowz.glossa.data.dto.OfficialCourseLectureDto
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 
 const val BASE_URL = "http://10.0.2.2:8096/"
 
@@ -38,9 +40,19 @@ class OfficialCourseApi(private val client: HttpClient) {
     suspend fun getCourses(): List<OfficialCourseDto> =
         OfficialCourseJson.decodeCourses(client.get("api/course").bodyAsText())
 
-    /** `null` when the backend no longer has the course. */
-    suspend fun getCourse(courseId: Long): OfficialCourseDto? =
-        OfficialCourseJson.decodeCourse(client.get("api/course/$courseId").bodyAsText())
+    /**
+     * `null` when the backend no longer has the course: today it answers `[]`, once its
+     * array bug is fixed the controller's 404 branch applies.
+     */
+    suspend fun getCourse(courseId: Long): OfficialCourseDto? {
+        val body = try {
+            client.get("api/course/$courseId").bodyAsText()
+        } catch (e: ClientRequestException) {
+            if (e.response.status == HttpStatusCode.NotFound) return null
+            throw e
+        }
+        return OfficialCourseJson.decodeCourse(body)
+    }
 }
 
 class OfficialCourseLectureApi(private val client: HttpClient) {

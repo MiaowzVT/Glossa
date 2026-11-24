@@ -231,7 +231,7 @@ panel. Endpoints used by the app (base URL `BASE_URL` in `network/HttpClient.kt`
 | Endpoint | Response | Used by |
 |----------|----------|---------|
 | `GET /api/course` | array of `{id, course_name, course_description, course_level, course_language, created_at, updated_at}` | `OfficialCourseApi.getCourses` |
-| `GET /api/course/:id` | **an array with 0..1 course** (backend bug), possibly fixed to an object later; `[]` = not found | `OfficialCourseApi.getCourse` |
+| `GET /api/course/:id` | **an array with 0..1 course** (backend bug), possibly fixed to an object later; `[]` (today) or 404 (after the fix) = not found | `OfficialCourseApi.getCourse` |
 | `GET /api/course/:id/lectures` | array of `{id, course_id, lecture_name, lecture_contents, created_at, updated_at}` | `OfficialCourseLectureApi.getLecturesForCourse` |
 
 Invariants:

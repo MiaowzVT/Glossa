@@ -65,6 +65,23 @@ class OfficialCourseApiTest {
     }
 
     @Test
+    fun singleCourseIsNullForNotFound() = runBlocking {
+        // No route for /api/course/9 -> the mock answers 404, like the controller once findById is fixed.
+        val api = OfficialCourseApi(client(emptyMap()))
+
+        assertNull(api.getCourse(9))
+    }
+
+    @Test
+    fun singleCourseServerErrorStillThrows() {
+        val api = OfficialCourseApi(
+            client(mapOf("/api/course/2" to "boom"), status = HttpStatusCode.InternalServerError),
+        )
+
+        assertThrows(ResponseException::class.java) { runBlocking { api.getCourse(2) } }
+    }
+
+    @Test
     fun lecturesUseCourseEndpoint() = runBlocking {
         val api = OfficialCourseLectureApi(client(mapOf("/api/course/2/lectures" to BackendSamples.LECTURES)))
 
