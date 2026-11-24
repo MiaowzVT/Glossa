@@ -31,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -39,6 +40,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.toRoute
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.VocabularyRepository
 import de.miaowz.glossa.data.model.VocabularyEntry
 import de.miaowz.glossa.ruby.RubyText
@@ -101,17 +103,18 @@ fun VocabularyDetailScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(
+                            R.string.back))
                     }
                 },
                 actions = {
                     val loaded = state as? VocabularyDetailUiState.Loaded
                     if (loaded != null) {
                         IconButton(onClick = { onEdit(loaded.entry.id) }) {
-                            Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit))
                         }
                         IconButton(onClick = { confirmDelete = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Delete")
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
                         }
                     }
                 },
@@ -124,7 +127,7 @@ fun VocabularyDetailScreen(
             }
             // Also shown briefly after deleting, before navigating back.
             VocabularyDetailUiState.NotFound -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
-                Text("This entry no longer exists.")
+                Text(stringResource(R.string.entry_no_longer_exists))
             }
             is VocabularyDetailUiState.Loaded -> EntryContent(current.entry, Modifier.padding(padding))
         }
@@ -133,16 +136,16 @@ fun VocabularyDetailScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete entry?") },
-            text = { Text("This entry and its example sentences will be deleted permanently.") },
+            title = { Text(stringResource(R.string.delete_entry_confirmation)) },
+            text = { Text(stringResource(R.string.delete_entry_examples_confirmation)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     viewModel.delete()
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

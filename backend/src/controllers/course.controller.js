@@ -4,7 +4,7 @@ import logger from '../utils/logger.js';
 export async function index(req, res) {
     logger.info(`GET: /api/course [INDEX]`);
     const courses = await Course.findAll();
-    res.end(JSON.stringify(courses));
+    res.json(courses);
 }
 
 export async function fetch(req, res) {
@@ -16,7 +16,7 @@ export async function fetch(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function fetchAllLecturesFromCourse(req, res) {
@@ -29,7 +29,7 @@ export async function fetchAllLecturesFromCourse(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(lectures));
+    res.status(200).json(lectures);
 }
 
 export async function store(req, res) {
@@ -42,7 +42,7 @@ export async function store(req, res) {
         return res.status(500).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function update(req, res) {
@@ -55,7 +55,7 @@ export async function update(req, res) {
         return res.status(404).end();
     }
 
-    res.status(200).end(JSON.stringify(course));
+    res.status(200).json(course);
 }
 
 export async function destroy(req, res) {

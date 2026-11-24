@@ -1,5 +1,6 @@
 package de.miaowz.glossa.ui.review
 
+import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -43,10 +44,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.model.VocabularyEntry
 import de.miaowz.glossa.ruby.RubyMarkup
 import de.miaowz.glossa.ruby.RubyText
@@ -65,11 +69,12 @@ fun ReviewScreen(
             TopAppBar(
                 title = {
                     val reviewing = state as? ReviewUiState.Reviewing
-                    Text(if (reviewing != null) "Repetition · ${reviewing.remaining} left" else "Repetition")
+                    Text(if (reviewing != null) stringResource(R.string.cards_left, reviewing.remaining) else stringResource(
+                        R.string.repitition))
                 },
                 navigationIcon = {
                     IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "End session")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.end_session))
                     }
                 },
             )
@@ -113,7 +118,7 @@ private fun Reviewing(
             )
         }
         Text(
-            if (state.isFlipped) "Did you know it?" else "Tap the card to reveal the meaning",
+            if (state.isFlipped) stringResource(R.string.did_you_know_it) else stringResource(R.string.tap_to_reveal),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -129,14 +134,14 @@ private fun Reviewing(
                 modifier = Modifier.weight(1f).height(64.dp),
             ) {
                 Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(28.dp))
-                Text("Wrong", Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.wrong), Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
             }
             Button(
                 onClick = { onAnswer(true) },
                 modifier = Modifier.weight(1f).height(64.dp),
             ) {
                 Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(28.dp))
-                Text("Correct", Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.correct), Modifier.padding(start = 8.dp), style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -161,7 +166,7 @@ private fun Flashcard(
     ) {
         Box(Modifier.fillMaxSize().padding(24.dp)) {
             Text(
-                listOfNotNull(entry.language.name, entry.category?.name, "second try".takeIf { isRetry })
+                listOfNotNull(entry.language.name, entry.category?.name, stringResource(R.string.second_try).takeIf { isRetry })
                     .joinToString(" · "),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -211,7 +216,7 @@ private fun Flashcard(
 
 @Composable
 private fun Summary(summary: ReviewSummary, onDone: () -> Unit, modifier: Modifier = Modifier) {
-    val feedback = feedbackFor(summary.percentCorrect)
+    val feedback = feedbackFor(summary.percentCorrect, LocalContext.current)
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -236,18 +241,18 @@ private fun Summary(summary: ReviewSummary, onDone: () -> Unit, modifier: Modifi
                 modifier = Modifier.size(120.dp),
                 strokeWidth = 10.dp,
             )
-            Text("${summary.percentCorrect} %", style = MaterialTheme.typography.headlineSmall)
+            Text(stringResource(R.string.summary_percent_correct, summary.percentCorrect), style = MaterialTheme.typography.headlineSmall)
         }
         OutlinedCard(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SummaryRow("Time spent", formatDuration(summary.durationMillis))
-                SummaryRow("Correct", summary.correct.toString())
-                SummaryRow("Incorrect", summary.incorrect.toString())
-                SummaryRow("Correct answers", "${summary.percentCorrect} %")
+                SummaryRow(stringResource(R.string.time_spent), formatDuration(summary.durationMillis))
+                SummaryRow(stringResource(R.string.correct), summary.correct.toString())
+                SummaryRow(stringResource(R.string.incorrect), summary.incorrect.toString())
+                SummaryRow(stringResource(R.string.correct_answers), stringResource(R.string.summary_percent_correct, summary.percentCorrect))
             }
         }
         Spacer(Modifier.height(8.dp))
-        Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+        Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.done)) }
     }
 }
 
@@ -272,44 +277,44 @@ private fun NothingDue(onClose: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
-        Text("All caught up", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.all_caught_up), style = MaterialTheme.typography.titleMedium)
         Text(
-            "No vocabulary is due for repetition right now. Come back later!",
+            stringResource(R.string.all_caught_up_detail),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Button(onClick = onClose) { Text("Back") }
+        Button(onClick = onClose) { Text(stringResource(R.string.back)) }
     }
 }
 
 private class Feedback(val icon: ImageVector, val title: String, val message: String)
 
-private fun feedbackFor(percentCorrect: Int): Feedback = when {
+private fun feedbackFor(percentCorrect: Int, context: Context): Feedback = when {
     percentCorrect == 100 -> Feedback(
         Icons.Outlined.EmojiEvents,
-        "Perfect!",
-        "Every single answer was right. Outstanding work!",
+        context.resources.getString(R.string.perfect),
+        context.resources.getString(R.string.all_perfect),
     )
     percentCorrect >= 85 -> Feedback(
         Icons.Outlined.EmojiEvents,
-        "Excellent work!",
-        "Your memory is in great shape. Keep it up!",
+        context.resources.getString(R.string.excellent_work),
+        context.resources.getString(R.string.excellent_work_detail),
     )
     percentCorrect >= 65 -> Feedback(
         Icons.Outlined.ThumbUp,
-        "Well done!",
-        "Solid progress. Every session makes these words stick a little better.",
+        context.resources.getString(R.string.well_done),
+        context.resources.getString(R.string.well_done_detail),
     )
     percentCorrect >= 40 -> Feedback(
         Icons.Outlined.ThumbUp,
-        "Keep going!",
-        "Learning takes time. The words you missed will come back soon, and you'll know them better.",
+        context.resources.getString(R.string.keep_going),
+        context.resources.getString(R.string.keep_going_detail),
     )
     else -> Feedback(
         Icons.Outlined.Favorite,
-        "Don't give up!",
-        "Mistakes are how your brain learns. Every session counts, and you'll get there.",
+        context.resources.getString(R.string.dont_give_up),
+        context.resources.getString(R.string.dont_give_up_detail),
     )
 }
 

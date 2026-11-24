@@ -25,8 +25,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.R
 
 /**
  * Body of a library screen: loading indicator, [empty] content when there are no entries at all,
@@ -68,7 +70,7 @@ fun <T> LibraryList(
             if (state.sections.isEmpty()) {
                 item(key = "no-results") {
                     Text(
-                        "No entries match your filters.",
+                        stringResource(R.string.no_entries_match_filters),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -108,7 +110,7 @@ private fun Filters(
             trailingIcon = {
                 if (state.filter.query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Filled.Clear, contentDescription = "Clear search")
+                        Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.clear_search))
                     }
                 }
             },
@@ -123,7 +125,7 @@ private fun Filters(
                 FilterChip(
                     selected = state.filter.languageId == null,
                     onClick = { onSelectLanguage(null) },
-                    label = { Text("All languages") },
+                    label = { Text(stringResource(R.string.all_languages)) },
                 )
             }
             items(state.languages, key = { it.id }) { language ->
@@ -143,7 +145,7 @@ private fun Filters(
                     FilterChip(
                         selected = state.filter.categoryId == null,
                         onClick = { onSelectCategory(null) },
-                        label = { Text("All categories") },
+                        label = { Text(stringResource(R.string.all_categories)) },
                     )
                 }
                 items(state.categories, key = { it.id }) { category ->

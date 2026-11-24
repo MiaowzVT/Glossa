@@ -23,9 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.model.GrammarEntry
 import de.miaowz.glossa.ruby.RubyText
 import de.miaowz.glossa.ui.common.EmptyLibrary
@@ -45,18 +48,18 @@ fun GrammarLibraryScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(title = { Text("Grammar Library") }, scrollBehavior = scrollBehavior)
+            TopAppBar(title = { Text(stringResource(R.string.grammar_library)) }, scrollBehavior = scrollBehavior)
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddEntry) {
-                Icon(Icons.Filled.Add, contentDescription = "Add grammar entry")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_grammar_entry))
             }
         },
     ) { padding ->
         LibraryList(
             state = state,
             padding = padding,
-            searchPlaceholder = "Search grammar",
+            searchPlaceholder = stringResource(R.string.search_grammar),
             onQueryChange = viewModel::setQuery,
             onSelectLanguage = viewModel::selectLanguage,
             onSelectCategory = viewModel::selectCategory,
@@ -64,8 +67,8 @@ fun GrammarLibraryScreen(
             empty = { modifier ->
                 EmptyLibrary(
                     icon = Icons.AutoMirrored.Outlined.MenuBook,
-                    title = "Your grammar library is empty",
-                    text = "Tap + to write your first grammar entry, with formatting, furigana and example sentences.",
+                    title = stringResource(R.string.grammar_library_empty),
+                    text = stringResource(R.string.grammar_library_empty_detail),
                     modifier = modifier,
                 )
             },
@@ -104,7 +107,7 @@ private fun EntryCard(entry: GrammarEntry, onClick: () -> Unit) {
             }
             if (entry.examples.isNotEmpty()) {
                 Text(
-                    text = if (entry.examples.size == 1) "1 example" else "${entry.examples.size} examples",
+                    text = pluralStringResource(R.plurals.grammar_examples, entry.examples.size, entry.examples.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
