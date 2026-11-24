@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.miaowz.glossa.R
 import de.miaowz.glossa.richtext.RichTextEditorState
 import de.miaowz.glossa.richtext.RichTextField
 import de.miaowz.glossa.richtext.RichTextToolbar
@@ -112,10 +114,10 @@ fun VocabularyEditorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (state.isNew) "New word" else "Edit word") },
+                title = { Text(if (state.isNew) stringResource(R.string.new_word) else stringResource(R.string.edit_word)) },
                 navigationIcon = {
                     IconButton(onClick = { if (state.isDirty) confirmDiscard = true else close() }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close))
                     }
                 },
                 actions = {
@@ -123,11 +125,11 @@ fun VocabularyEditorScreen(
                         preview = !preview
                         if (preview) dismissKeyboard()
                     }) {
-                        if (preview) Icon(Icons.Filled.Edit, contentDescription = "Edit")
-                        else Icon(Icons.Filled.Visibility, contentDescription = "Preview")
+                        if (preview) Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.edit))
+                        else Icon(Icons.Filled.Visibility, contentDescription = stringResource(R.string.preview))
                     }
                     TextButton(onClick = viewModel::save, enabled = !state.isLoading && !state.isSaving) {
-                        Text("Save")
+                        Text(stringResource(R.string.save))
                     }
                 },
             )
@@ -162,14 +164,14 @@ fun VocabularyEditorScreen(
                 OutlinedTextField(
                     value = state.term,
                     onValueChange = viewModel::setTerm,
-                    label = { Text("Word or phrase") },
-                    placeholder = { Text("e.g. {勉強|べんきょう}") },
+                    label = { Text(stringResource(R.string.word_or_phrase)) },
+                    placeholder = { Text(stringResource(R.string.word_or_phrase_placeholder)) },
                     isError = state.termError != null,
                     supportingText = state.termError?.let { { Text(it) } },
                     singleLine = true,
                     trailingIcon = {
                         IconButton(onClick = { furiganaTarget = FuriganaTarget.Term }) {
-                            Text("ふ", fontSize = 18.sp)
+                            Text(stringResource(R.string.furigana_button_title), fontSize = 18.sp)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -177,13 +179,13 @@ fun VocabularyEditorScreen(
                 OutlinedTextField(
                     value = state.meaning,
                     onValueChange = viewModel::setMeaning,
-                    label = { Text("Meaning") },
-                    placeholder = { Text("e.g. study") },
+                    label = { Text(stringResource(R.string.meaning)) },
+                    placeholder = { Text(stringResource(R.string.meaning_placeholder)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     trailingIcon = {
                         IconButton(onClick = { furiganaTarget = FuriganaTarget.Meaning }) {
-                            Text("ふ", fontSize = 18.sp)
+                            Text(stringResource(R.string.furigana_button_title), fontSize = 18.sp)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -202,17 +204,17 @@ fun VocabularyEditorScreen(
                     value = state.notes,
                     onValueChange = viewModel::setNotes,
                     state = rememberRegisteredEditor(editors),
-                    label = "Notes",
-                    placeholder = "Usage, nuances, related words…",
+                    label = stringResource(R.string.notes),
+                    placeholder = stringResource(R.string.notes_placeholder),
                     minLines = 3,
                 )
                 Text(
-                    "Tip: select text and tap ふ to add furigana, or type {漢字|かんじ}.",
+                    stringResource(R.string.furigana_tip),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 HorizontalDivider()
-                Text("Example sentences", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.example_sentences), style = MaterialTheme.typography.titleMedium)
                 state.examples.forEachIndexed { index, example ->
                     key(example.key) {
                         ExampleEditor(
@@ -231,7 +233,7 @@ fun VocabularyEditorScreen(
                 }
                 OutlinedButton(onClick = viewModel::addExample, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Filled.Add, contentDescription = null)
-                    Text("Add example", Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.add_example), Modifier.padding(start = 8.dp))
                 }
             }
         }
@@ -265,16 +267,16 @@ fun VocabularyEditorScreen(
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?") },
-            text = { Text("Your unsaved changes to this word will be lost.") },
+            title = { Text(stringResource(R.string.discard_changes_confirmation)) },
+            text = { Text(stringResource(R.string.unsaved_changes_lost)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDiscard = false
                     close()
-                }) { Text("Discard") }
+                }) { Text(stringResource(R.string.discard)) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") }
+                TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.keep_editing)) }
             },
         )
     }
@@ -283,7 +285,7 @@ fun VocabularyEditorScreen(
 @Composable
 private fun EntryPreview(state: VocabularyEditorUiState) {
     if (state.term.text.isBlank()) {
-        Text("Untitled", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.untitled), style = MaterialTheme.typography.headlineMedium)
     } else {
         RubyText(text = state.term.text, style = MaterialTheme.typography.headlineMedium)
     }
