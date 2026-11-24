@@ -165,7 +165,7 @@ fun GrammarEditorScreen(
                     label = { Text(stringResource(R.string.title)) },
                     placeholder = { Text(stringResource(R.string.title_example_placeholder)) },
                     isError = state.titleError != null,
-                    supportingText = state.titleError?.let { { Text(it) } },
+                    supportingText = state.titleError?.let { { Text(stringResource(it)) } },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     trailingIcon = {
@@ -179,7 +179,7 @@ fun GrammarEditorScreen(
                     options = options,
                     languageId = state.languageId,
                     categoryId = state.categoryId,
-                    languageError = state.languageError,
+                    languageError = state.languageError?.let { stringResource(it) },
                     onSelectLanguage = viewModel::selectLanguage,
                     onSelectCategory = viewModel::selectCategory,
                     onCreateLanguage = viewModel::createLanguage,

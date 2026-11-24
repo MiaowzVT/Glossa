@@ -1,11 +1,13 @@
 package de.miaowz.glossa.ui.vocabulary
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.VocabularyRepository
 import de.miaowz.glossa.data.model.ExampleSentence
 import de.miaowz.glossa.data.model.VocabularyEntryDraft
@@ -40,8 +42,10 @@ data class VocabularyEditorUiState(
     val isSaving: Boolean = false,
     val saved: SavedEntry? = null,
 ) {
-    val termError: String? get() = if (showErrors && term.text.isBlank()) "Enter a word or phrase" else null
-    val languageError: String? get() = if (showErrors && languageId == null) "Choose a language" else null
+    @get:StringRes
+    val termError: Int? get() = if (showErrors && term.text.isBlank()) R.string.error_enter_word_or_phrase else null
+    @get:StringRes
+    val languageError: Int? get() = if (showErrors && languageId == null) R.string.error_language_required else null
 }
 
 class VocabularyEditorViewModel(
