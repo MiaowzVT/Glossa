@@ -102,7 +102,11 @@ fun OfficialSetLectureListScreen(
                     if (error != null) {
                         item(key = "error") { SyncErrorCard(error, onDismiss = viewModel::dismissError) }
                     }
-                    item(key = "course") { CourseHeader(course, state.lectures.size) }
+                    item(key = "course") {
+                        // No "0 lectures" while the first sync of this course is still running.
+                        val count = state.lectures.size.takeUnless { it == 0 && state.isRefreshing }
+                        CourseHeader(course, count)
+                    }
                     item(key = "lectures-header") {
                         Text(
                             text = stringResource(R.string.community_lectures_header),
@@ -125,7 +129,7 @@ fun OfficialSetLectureListScreen(
 
 /** Same layout as the vocabulary detail screen's header. */
 @Composable
-private fun CourseHeader(course: OfficialCourse, lectureCount: Int) {
+private fun CourseHeader(course: OfficialCourse, lectureCount: Int?) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -138,11 +142,13 @@ private fun CourseHeader(course: OfficialCourse, lectureCount: Int) {
         if (course.description.isNotBlank()) {
             RubyText(text = course.description, style = MaterialTheme.typography.bodyLarge)
         }
-        Text(
-            text = pluralStringResource(R.plurals.community_lecture_count, lectureCount, lectureCount),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (lectureCount != null) {
+            Text(
+                text = pluralStringResource(R.plurals.community_lecture_count, lectureCount, lectureCount),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

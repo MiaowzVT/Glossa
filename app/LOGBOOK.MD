@@ -182,3 +182,20 @@ reachable from the work laptop (no live test). Write a plan, review it criticall
 - **ARCHITECTURE.md**: Community tab, `network/` layer, official-course tables (schema v6), endpoints and decoding
   invariants (§4.6), navigation routes, screens, string convention, tests, a recipe for new backend endpoints, known gaps.
 - Not verified against the real backend (not reachable from this machine) and not checked visually on a device.
+
+### Review (scheduled review task, branch `dev`)
+
+**Prompt**: <br>
+Independently review the overnight work on official courses and lectures like a pull request (plan, every changed
+file, CLAUDE.md/ARCHITECTURE.md rules, tests), re-run tests and build, fix clear defects with small commits on `dev`,
+and record larger recommendations in a review note.
+
+**Changes**: <br>
+
+- `network/HttpClient.kt`: `OfficialCourseApi.getCourse` also treats HTTP 404 as "course not found" (`null`). The
+  backend controller already has a 404 branch that becomes reachable once the array bug in `findById` is fixed; until
+  now the app would have shown a server error and kept the stale course. Other HTTP errors still throw.
+- `OfficialSetLectureListScreen.kt`: the course header no longer shows "0 lectures" while the first sync of a course
+  is still running.
+- Tests: `OfficialCourseApiTest` covers 404 → `null` and 500 → `ResponseException` for the single-course endpoint.
+- ARCHITECTURE §4.6: endpoint table mentions the 404 case.
