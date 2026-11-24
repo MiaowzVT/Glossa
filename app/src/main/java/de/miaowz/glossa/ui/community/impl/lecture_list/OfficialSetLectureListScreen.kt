@@ -192,14 +192,6 @@ private fun LectureCard(number: Int, lecture: OfficialLecture, onClick: () -> Un
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
             )
-            if (!lecture.contents.isBlank) {
-                RubyText(
-                    text = lecture.contents,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                )
-            }
         }
     }
 }
