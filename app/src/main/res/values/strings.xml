@@ -1,3 +1,177 @@
 <resources>
     <string name="app_name">Glossa</string>
+
+    <!-- Community: shared -->
+    <string name="community_back">Back</string>
+    <string name="community_dismiss">Dismiss</string>
+    <string name="community_error_title">Couldn\'t sync</string>
+    <string name="community_error_network">The server can\'t be reached. Are you offline? Pull down to try again.</string>
+    <string name="community_error_server">The server answered with an error. Please try again later.</string>
+    <string name="community_error_invalid_data">The server sent data Glossa doesn\'t understand.</string>
+
+    <!-- Community: overview -->
+    <string name="community_overview_title">Community</string>
+    <string name="community_official_sets_card_title">Official Sets</string>
+    <string name="community_official_sets_card_text">Read and Download official courses - curated and effective</string>
+    <string name="community_sets_card_title">Community Sets</string>
+    <string name="community_sets_card_text">Sets created by the community - anything you need, at any time.</string>
+
+    <!-- Community: official sets (course list) -->
+    <string name="community_official_sets_title">Official courses</string>
+    <string name="community_official_sets_empty_title">No official courses yet</string>
+    <string name="community_official_sets_empty_text">New courses will show up here. Pull down to check again.</string>
+    <string name="community_official_sets_error_title">Couldn\'t load courses</string>
+    <string name="community_course_language_unknown">Other</string>
+
+    <!-- Community: lecture list -->
+    <string name="community_lectures_header">Lectures</string>
+    <plurals name="community_lecture_count">
+        <item quantity="one">%d lecture</item>
+        <item quantity="other">%d lectures</item>
+    </plurals>
+    <string name="community_lecture_number">Lecture %d</string>
+    <string name="community_lectures_empty_title">No lectures yet</string>
+    <string name="community_lectures_empty_text">This course doesn\'t have any lectures yet. Pull down to check again.</string>
+    <string name="community_lectures_error_title">Couldn\'t load lectures</string>
+    <string name="community_course_not_found_title">Course not available</string>
+    <string name="community_course_not_found_text">This course was removed. Go back to see all official courses.</string>
+
+    <!-- Community: lecture detail -->
+    <string name="community_lecture_not_found">This lecture is no longer available.</string>
+    <string name="community_lecture_empty_contents">This lecture has no content yet.</string>
+
+    <!-- CategoryPicker.kt -->
+    <string name="picker_label_language">Language</string>
+    <string name="picker_placeholder_languages_empty">Add your first language</string>
+    <string name="picker_placeholder_languages_filled">Choose a language</string>
+    <string name="picker_add_label">New language...</string>
+    <string name="picker_label_category">Category</string>
+    <string name="picker_category_selected_text_fallback">None</string>
+    <string name="picker_label_category_none">None</string>
+    <string name="picker_label_category_add">New category...</string>
+    <string name="name_dialog_title_new_language">New Language</string>
+    <string name="name_dialog_label_new_language">Language</string>
+    <string name="name_dialog_placeholder_new_language">e.g. Japanese</string>
+    <string name="name_dialog_title_new_category">New Category</string>
+    <string name="name_dialog_label_new_category">Category</string>
+    <string name="name_dialog_placeholder_new_category">e.g. Particles</string>
+    <string name="name_dialog_confirm_button">Add</string>
+    <string name="name_dialog_dismiss_button">Cancel</string>
+
+    <!-- Examples.kt -->
+    <string name="remove_example_content_description">Remove example %d</string>
+    <string name="rich_text_sentence_placeholder">Sentence</string>
+    <string name="rich_text_translation_note_placeholder">Translation or notes (optional)</string>
+    <string name="text_examples">Examples</string>
+    <string name="example_num">Example %d</string>
+
+    <!-- LibraryList.kt -->
+    <string name="no_entries_match_filters">No entries match your filters</string>
+    <string name="clear_search">Clear search</string>
+    <string name="all_languages">All languages</string>
+    <string name="all_categories">All categories</string>
+
+    <!-- GrammarDetailScreen.kt -->
+    <string name="back">Back</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="delete_entry_confirmation">Delete entry?</string>
+    <string name="delete_entry_confirmation_detail">This entry and its example sentences will be deleted permanently.</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- GrammarEditorScreen.kt -->
+    <string name="new_entry">New Entry</string>
+    <string name="edit_entry">Edit Entry</string>
+    <string name="close">Close</string>
+    <string name="preview">Preview</string>
+    <string name="save">Save</string>
+    <string name="title">Title</string>
+    <string name="title_example_placeholder">e.g. 〜{間|あいだ}に</string>
+    <string name="furigana_button_title">ふ</string>
+    <string name="description">Description</string>
+    <string name="grammar_description_placeholder">Explain the grammar point...</string>
+    <string name="furigana_tip">Tip: select text and tap ふ to add furigana, or type {漢字|かんじ}.</string>
+    <string name="example_sentences">Example sentences</string>
+    <string name="add_example">Add example</string>
+    <string name="discard_changes_confirmation">Discard changes?</string>
+    <string name="discard_changes_confirmation_detail">Your unsaved changes to this entry will be lost.</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
+    <string name="untitled">Untitled</string>
+
+    <!-- GrammarLibraryScreen.kt -->
+    <string name="grammar_library">Grammar Library</string>
+    <string name="add_grammar_entry">Add Grammar Entry</string>
+    <string name="search_grammar">Search Grammar</string>
+    <string name="grammar_library_empty">Your Grammar Library is empty</string>
+    <string name="grammar_library_empty_detail">Tap + to write your first grammar entry, with formatting, furigana and example sentences.</string>
+    <plurals name="grammar_examples">
+        <item quantity="one">%d Example</item>
+        <item quantity="other">%d Examples</item>
+    </plurals>
+
+    <!-- GrammarEditorViewModel.kt -->
+    <string name="error_title_required">Enter a title</string>
+    <string name="error_language_required">Enter a language</string>
+
+    <!-- HomeScreen.kt -->
+    <string name="repitition">Repitition</string>
+    <string name="due_count_0">All caught up. Come back later!</string>
+    <string name="due_count_1">1 vocabulary card due</string>
+    <string name="due_count_n">%d vocabulary cards due</string>
+    <string name="start_repitition">Start repitition</string>
+
+    <!-- GlossaNavHost.kt -->
+    <string name="home">Home</string>
+    <string name="grammar">Grammar</string>
+    <string name="community">Community</string>
+
+    <!-- ReviewScreen.kt -->
+    <string name="cards_left">Repetition · %d left</string>
+    <string name="end_session">End session</string>
+    <string name="did_you_know_it">Did you know it?</string>
+    <string name="tap_to_reveal">Tap the card to reveal the meaning</string>
+    <string name="wrong">Wrong</string>
+    <string name="correct">Correct</string>
+    <string name="incorrect">Incorrect</string>
+    <string name="second_try">second try</string>
+    <string name="summary_percent_correct">%d correct</string>
+    <string name="time_spent">Time spent</string>
+    <string name="correct_answers">Correct answers</string>
+    <string name="done">Done</string>
+    <string name="all_caught_up">All caught up</string>
+    <string name="all_caught_up_detail">No vocabulary is due for repetition right now. Come back later!</string>
+    <string name="perfect">Perfect!</string>
+    <string name="all_perfect">Every single answer was right. Outstanding work</string>
+    <string name="excellent_work">Excellent work</string>
+    <string name="excellent_work_detail">Your memory is in great shape. Keep it up!</string>
+    <string name="well_done">Well done!</string>
+    <string name="well_done_detail">Solid progress. Every session makes these words stick a little better.</string>
+    <string name="keep_going">Keep going!</string>
+    <string name="keep_going_detail">Learning takes time. The words you missed will come back soon, and you\'ll know them better.</string>
+    <string name="dont_give_up">Don\'t give up!</string>
+    <string name="dont_give_up_detail">Mistakes are how your brain learns. Every session counts, and you\'ll get there.</string>
+
+    <!-- VocabularyDetailScreen -->
+    <string name="entry_no_longer_exists">This entry no longer exists.</string>
+    <string name="delete_entry_examples_confirmation">This entry and its example sentences will be deleted permanently.</string>
+    <string name="new_word">New word</string>
+    <string name="edit_word">Edit word</string>
+    <string name="word_or_phrase">Word or phrase</string>
+    <string name="word_or_phrase_placeholder">e.g. {勉強|べんきょう}</string>
+    <string name="meaning">Meaning</string>
+    <string name="meaning_placeholder">e.g. study</string>
+    <string name="notes">Notes</string>
+    <string name="notes_placeholder">Usage, nuances, related words...</string>
+    <string name="unsaved_changes_lost">Your unsaved changes to this word will be lost.</string>
+
+    <!-- VocabularyLibaryScreen.kt-->
+    <string name="vocabulary">Vocabulary</string>
+    <string name="add_vocabulary_entry">Add vocabulary entry</string>
+    <string name="search_vocabulary">Search vocabulary</string>
+    <string name="vocabulary_empty">Your vocabulary is empty</string>
+    <string name="vocabulary_empty_detail">Tap + to add your first word, with its meaning, furigana, notes and example sentences.</string>
+
+    <!-- VocabularyEditorViewModel.kt -->
+    <string name="error_enter_word_or_phrase">Enter a word or phrase.</string>
 </resources>

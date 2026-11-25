@@ -126,7 +126,7 @@ The controller that does all the behind-the-scenes work looks fine. It reuses ou
 The actual best part about this prompt' work: Claude actually found a few bugs in the implementation of the backend that I probably overlooked by being sleep deprived or something. So these will be checked out and fixed accordingly in the next commit.
 ## November 23rd, 2026
 
-### First Prompt
+### First Prompt (Commit: 5dcba70)
 
 **Prompt**: <br>
 Trying to do unencrypted HTTP server communication. It doesn't work tho using 10.0.2.2. Please help me fix that.
@@ -137,3 +137,80 @@ Trying to do unencrypted HTTP server communication. It doesn't work tho using 10
 - `AndroidManifest.xml`: declares `android.permission.ACCESS_LOCAL_NETWORK`.
 - `ui/community/CommunityOverviewScreen.kt`: `RequestLocalNetworkPermission()` asks for the permission (API ≥ 37 only) when the Community tab is first shown, before Official Sets syncs.
 - Verified on the API 37 emulator: courses now load from `http://10.0.2.2:8096/`.
+
+**Reflection**:
+
+Claude built a function that asks for the user's permission to access the local network.  It correctly only fires for SDK Versions >= 37, as required. The rest of the permission request logic looks fine. Putting the actual check upon first clicking the Community tab makes perfect sense. A user shouldn't be asked to give network permission if they don't use network features. At the same time, it should be asked before fetching network data for the first time, so putting it on the main Community tab is the best possible location.
+
+### Second Prompt (scheduled overnight task, branch `dev`) (Commits 1a512a5 to 9066220 on `Kurse` branch)
+
+**Prompt**: <br>
+Work autonomously on Glossa (CLAUDE.md and ARCHITECTURE.md are the top rule). On `dev`, local commits only:
+(1) load and show all official courses with all fields (name, description, level, language);
+(2) load and show lectures: tapping a course lists all its lectures, tapping a lecture opens a detail view with its full
+content (`lecture_contents` is RichText JSON, names may contain `{base|reading}` ruby markup → `RichText.decode()` + `RubyText`);
+(3) same design as the vocabulary screens (cards, colors, typography, spacing, TopAppBar, loading/empty/error states),
+reusing existing components;
+(4) move all UI strings of the Community / Official Sets / lecture screens to `res/values/strings.xml` and read them with
+`stringResource`, ViewModel errors as resource ids / UI state (deliberate change of the "hard-coded strings" convention,
+to be documented in ARCHITECTURE.md and CLAUDE.md);
+(5) JVM unit tests for everything new or changed (realistic backend JSON incl. the array-instead-of-object bug of
+`GET /api/course/:id`, repositories with fake API/DAO, mapping, ViewModel states); all tests green and `assembleDebug` passing;
+(6) small, meaningful commits. The backend must not be changed, it sends no reliable JSON content type, and it is not
+reachable from the work laptop (no live test). Write a plan, review it critically before coding, then implement in stages.
+
+**Changes**: <br>
+
+- **Networking** (`network/HttpClient.kt`, new `network/OfficialCourseJson.kt`): responses are read with `bodyAsText()`
+  and decoded by `OfficialCourseJson` instead of Ktor content negotiation, so a missing/wrong `Content-Type` no longer
+  breaks parsing. `getCourse(id)` accepts the array-wrapped course as well as an object (`[]` = not found); lectures are
+  loaded per course from `GET /api/course/:id/lectures`. `glossaDefaults()` shares base URL + `expectSuccess` with tests.
+- **DTOs** (`data/dto/`): nullable timestamps (NULL-able columns in the lecture table), defaults for missing fields,
+  `parseBackendTimestamp` (ISO-8601 or SQL datetime, else 0) instead of a crashing `Instant.parse`.
+- **Data layer**: new domain models `OfficialCourse` / `OfficialLecture` (`data/model/OfficialCourse.kt`); the
+  repositories in `network/repository/` now return models instead of Room entities, decode lecture contents to
+  `RichText`, sync lectures per course (`replaceLecturesForCourse`) and drop courses the backend no longer has
+  (`refreshCourse`). New DAO queries only – no entity change, DB version stays 6.
+- **UI** (`ui/community/`): course list with one section per language and cards like `VocabularyCard` (ruby name,
+  level chip, description); lecture list with a course header like the vocabulary detail and numbered lecture cards
+  (fixes the old filter by lecture id instead of course id); new lecture detail screen
+  (`OfficialLectureDetailRoute`) rendering the full RichText with furigana. Back buttons, pull-to-refresh, shared
+  loading/empty/error states (`CommunityComponents.kt`), dismissible error card. Errors are `SyncError` UI state with
+  string resources; `CancellationException` is no longer swallowed. ViewModels come from `CreationExtras` accessors
+  instead of custom factories.
+- **Strings**: all community texts in `strings.xml` (`community_*` keys, a plural for the lecture count). CLAUDE.md and
+  ARCHITECTURE §8.4/§11 now say that new or touched screens use string resources, migrated per whole screen.
+- **Tests** (74 JVM tests, all green; new deps `ktor-client-mock`, `kotlinx-coroutines-test`): backend JSON samples,
+  API with `MockEngine` (no/HTML content type, HTTP errors), DTO mapping, repositories with fake DAOs, ViewModel states
+  (loaded, empty, offline, server error, invalid data, dismiss, retry), `SyncError` mapping.
+- **ARCHITECTURE.md**: Community tab, `network/` layer, official-course tables (schema v6), endpoints and decoding
+  invariants (§4.6), navigation routes, screens, string convention, tests, a recipe for new backend endpoints, known gaps.
+- Not verified against the real backend (not reachable from this machine) and not checked visually on a device.
+
+### Review (scheduled review task, branch `dev`)
+
+**Prompt**: <br>
+Independently review the overnight work on official courses and lectures like a pull request (plan, every changed
+file, CLAUDE.md/ARCHITECTURE.md rules, tests), re-run tests and build, fix clear defects with small commits on `dev`,
+and record larger recommendations in a review note.
+
+**Changes**: <br>
+
+- `network/HttpClient.kt`: `OfficialCourseApi.getCourse` also treats HTTP 404 as "course not found" (`null`). The
+  backend controller already has a 404 branch that becomes reachable once the array bug in `findById` is fixed; until
+  now the app would have shown a server error and kept the stale course. Other HTTP errors still throw.
+- `OfficialSetLectureListScreen.kt`: the course header no longer shows "0 lectures" while the first sync of a course
+  is still running.
+- Tests: `OfficialCourseApiTest` covers 404 → `null` and 500 → `ResponseException` for the single-course endpoint.
+- ARCHITECTURE §4.6: endpoint table mentions the 404 case.
+
+### Pull Request: Modernize official courses and lecture list UI (Commit: b792595)
+
+**Prompt**: <br>
+Modernize official courses and lecture list UI.
+
+**Changes**: <br>
+
+- Refined the official course cards and lecture list presentation.
+- During the merge with `master`, retained its newer localized course and lecture screens, which include
+  the same presentation improvements alongside lecture details and shared loading/error states.

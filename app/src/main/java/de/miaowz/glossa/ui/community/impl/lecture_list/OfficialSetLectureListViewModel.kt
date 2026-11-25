@@ -1,20 +1,13 @@
 package de.miaowz.glossa.ui.community.impl.lecture_list
 
-import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.toRoute
-import de.miaowz.glossa.GlossaApplication
-import de.miaowz.glossa.data.db.OfficialCourseEntity
-import de.miaowz.glossa.data.db.OfficialCourseLectureEntity
+import de.miaowz.glossa.data.model.OfficialCourse
+import de.miaowz.glossa.data.model.OfficialLecture
 import de.miaowz.glossa.network.repository.OfficialCourseLectureRepository
 import de.miaowz.glossa.network.repository.OfficialCourseRepository
-import de.miaowz.glossa.ui.navigation.OfficialSetLectureListRoute
+import de.miaowz.glossa.ui.community.SyncError
+import de.miaowz.glossa.ui.community.syncErrorOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,50 +16,62 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class OfficialSetLectureListUiState(
-    val entryId: Long,
-    val lectures: List<OfficialCourseLectureEntity> = emptyList(),
+    /** The cached course has not been read yet. */
+    val isLoading: Boolean = true,
+    /** `null` when the course is not cached (yet) or was removed on the backend. */
+    val course: OfficialCourse? = null,
+    val lectures: List<OfficialLecture> = emptyList(),
     val isRefreshing: Boolean = false,
-    val error: String? = null
+    val error: SyncError? = null,
 )
 
+/** Course header and lectures of [courseId], from the cache; [refresh] syncs both from the backend. */
 class OfficialSetLectureListViewModel(
-    savedStateHandle: SavedStateHandle,
-    private val repository: OfficialCourseLectureRepository
+    private val courseId: Long,
+    private val courseRepository: OfficialCourseRepository,
+    private val lectureRepository: OfficialCourseLectureRepository,
 ) : ViewModel() {
-
-    private val entryId = savedStateHandle.toRoute<OfficialSetLectureListRoute>().entryId
     private val isRefreshing = MutableStateFlow(false)
-    private val error = MutableStateFlow<String?>(null)
+    private val error = MutableStateFlow<SyncError?>(null)
 
-    val uiState: StateFlow<OfficialSetLectureListUiState> =
-        combine(repository.lectures, isRefreshing, error) { lectures, refreshing, err ->
-            OfficialSetLectureListUiState(entryId, lectures, refreshing, err)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000),
-            OfficialSetLectureListUiState(entryId))
+    val uiState: StateFlow<OfficialSetLectureListUiState> = combine(
+        courseRepository.observeCourse(courseId),
+        lectureRepository.observeLectures(courseId),
+        isRefreshing,
+        error,
+    ) { course, lectures, refreshing, err ->
+        OfficialSetLectureListUiState(
+            isLoading = false,
+            course = course,
+            lectures = lectures,
+            isRefreshing = refreshing,
+            error = err,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OfficialSetLectureListUiState())
 
-    init { refresh() }
+    init {
+        refresh()
+    }
 
     fun refresh() {
+        if (isRefreshing.value) return
+        isRefreshing.value = true
+        error.value = null
         viewModelScope.launch {
-            isRefreshing.value = true
-            error.value = null
             try {
-                repository.refresh()
+                // A course the backend no longer has is dropped from the cache; its lectures are moot.
+                if (courseRepository.refreshCourse(courseId)) {
+                    lectureRepository.refreshLectures(courseId)
+                }
             } catch (e: Exception) {
-                Log.e("Sync", "Refresh failed", e)
-                error.value = "Couldn't sync courses - are you perhaps offline?"
+                error.value = syncErrorOf(e)
             } finally {
                 isRefreshing.value = false
             }
         }
     }
 
-    companion object {
-        val Factory = viewModelFactory {
-            initializer {
-                val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as GlossaApplication
-                OfficialSetLectureListViewModel(createSavedStateHandle(), app.officialCourseLectureRepository)
-            }
-        }
+    fun dismissError() {
+        error.value = null
     }
 }

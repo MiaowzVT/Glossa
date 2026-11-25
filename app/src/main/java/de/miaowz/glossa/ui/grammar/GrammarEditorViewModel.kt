@@ -1,11 +1,13 @@
 package de.miaowz.glossa.ui.grammar
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.GrammarRepository
 import de.miaowz.glossa.data.model.ExampleSentence
 import de.miaowz.glossa.data.model.GrammarEntryDraft
@@ -39,8 +41,10 @@ data class EditorUiState(
     val isSaving: Boolean = false,
     val saved: SavedEntry? = null,
 ) {
-    val titleError: String? get() = if (showErrors && title.text.isBlank()) "Enter a title" else null
-    val languageError: String? get() = if (showErrors && languageId == null) "Choose a language" else null
+    @get:StringRes
+    val titleError: Int? get() = if (showErrors && title.text.isBlank()) R.string.error_title_required else null
+    @get:StringRes
+    val languageError: Int? get() = if (showErrors && languageId == null) R.string.error_language_required else null
 }
 
 class GrammarEditorViewModel(

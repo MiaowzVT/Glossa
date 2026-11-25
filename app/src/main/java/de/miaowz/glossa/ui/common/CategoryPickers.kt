@@ -28,7 +28,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.model.Category
 import de.miaowz.glossa.data.model.Language
 
@@ -56,26 +58,26 @@ fun CategoryPickers(
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Picker(
-            label = "Language",
+            label = stringResource(R.string.picker_label_language),
             selectedText = options.languages.firstOrNull { it.id == languageId }?.name.orEmpty(),
-            placeholder = if (options.languages.isEmpty()) "Add your first language" else "Choose a language",
+            placeholder = if (options.languages.isEmpty()) stringResource(R.string.picker_placeholder_languages_empty) else stringResource(R.string.picker_placeholder_languages_filled),
             error = languageError,
             enabled = true,
             items = options.languages.map { it.id to it.name },
             noneLabel = null,
-            addLabel = "New language…",
+            addLabel = stringResource(R.string.picker_add_label),
             onSelect = { it?.let(onSelectLanguage) },
             onAdd = { newLanguageDialog = true },
         )
         Picker(
-            label = "Category",
-            selectedText = options.categories.firstOrNull { it.id == categoryId }?.name ?: "None",
+            label = stringResource(R.string.picker_label_category),
+            selectedText = options.categories.firstOrNull { it.id == categoryId }?.name ?: stringResource(R.string.picker_category_selected_text_fallback),
             placeholder = null,
             error = null,
             enabled = languageId != null,
             items = options.categories.map { it.id to it.name },
-            noneLabel = "None",
-            addLabel = "New category…",
+            noneLabel = stringResource(R.string.picker_label_category_none),
+            addLabel = stringResource(R.string.picker_label_category_add),
             onSelect = onSelectCategory,
             onAdd = { newCategoryDialog = true },
         )
@@ -83,9 +85,9 @@ fun CategoryPickers(
 
     if (newLanguageDialog) {
         NameDialog(
-            title = "New language",
-            label = "Language",
-            placeholder = "e.g. Japanese",
+            title = stringResource(R.string.name_dialog_title_new_language),
+            label = stringResource(R.string.name_dialog_label_new_language),
+            placeholder = stringResource(R.string.name_dialog_placeholder_new_language),
             onConfirm = {
                 newLanguageDialog = false
                 onCreateLanguage(it)
@@ -95,9 +97,9 @@ fun CategoryPickers(
     }
     if (newCategoryDialog) {
         NameDialog(
-            title = "New category",
-            label = "Category",
-            placeholder = "e.g. Particles",
+            title = stringResource(R.string.name_dialog_title_new_category),
+            label = stringResource(R.string.name_dialog_label_new_category),
+            placeholder = stringResource(R.string.name_dialog_placeholder_new_category),
             onConfirm = {
                 newCategoryDialog = false
                 onCreateCategory(it)
@@ -200,10 +202,10 @@ private fun NameDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text("Add") }
+            TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.name_dialog_confirm_button)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.name_dialog_dismiss_button)) }
         },
     )
 }

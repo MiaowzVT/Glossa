@@ -9,23 +9,29 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface OfficialCourseLectureDao {
 
-    @Query("SELECT * FROM official_course_lecture ORDER BY updatedAt DESC")
-    fun observeLectures(): Flow<List<OfficialCourseLectureEntity>>
+    /** Lectures of one course in creation order (the backend has no explicit position). */
+    @Query("SELECT * FROM official_course_lecture WHERE courseId = :courseId ORDER BY id")
+    fun observeLecturesForCourse(courseId: Long): Flow<List<OfficialCourseLectureEntity>>
+
+    @Query("SELECT * FROM official_course_lecture WHERE id = :id")
+    fun observeLecture(id: Long): Flow<OfficialCourseLectureEntity?>
 
     @Query("SELECT * FROM official_course_lecture WHERE id = :id")
     suspend fun findLectureById(id: Long): OfficialCourseLectureEntity?
 
     @Query("SELECT * FROM official_course_lecture WHERE courseId = :courseId")
     suspend fun findLecturesByCourseId(courseId: Long): List<OfficialCourseLectureEntity>
+
     @Upsert
-    suspend fun upsertLectures(courses: List<OfficialCourseLectureEntity>)
+    suspend fun upsertLectures(lectures: List<OfficialCourseLectureEntity>)
 
-    @Query("DELETE FROM official_course_lecture")
-    suspend fun deleteAll()
+    @Query("DELETE FROM official_course_lecture WHERE courseId = :courseId")
+    suspend fun deleteLecturesForCourse(courseId: Long)
 
+    /** Replaces the lectures of one course; other courses' lectures are untouched. */
     @Transaction
-    suspend fun replaceAll(lectures: List<OfficialCourseLectureEntity>) {
-        deleteAll()
+    suspend fun replaceLecturesForCourse(courseId: Long, lectures: List<OfficialCourseLectureEntity>) {
+        deleteLecturesForCourse(courseId)
         upsertLectures(lectures)
     }
 }

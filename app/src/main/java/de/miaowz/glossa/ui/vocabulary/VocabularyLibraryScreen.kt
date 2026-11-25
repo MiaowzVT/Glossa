@@ -23,9 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.model.VocabularyEntry
 import de.miaowz.glossa.ruby.RubyText
 import de.miaowz.glossa.ui.common.EmptyLibrary
@@ -45,18 +48,18 @@ fun VocabularyLibraryScreen(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(title = { Text("Vocabulary") }, scrollBehavior = scrollBehavior)
+            TopAppBar(title = { Text(stringResource(R.string.vocabulary)) }, scrollBehavior = scrollBehavior)
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddEntry) {
-                Icon(Icons.Filled.Add, contentDescription = "Add vocabulary entry")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_vocabulary_entry))
             }
         },
     ) { padding ->
         LibraryList(
             state = state,
             padding = padding,
-            searchPlaceholder = "Search vocabulary",
+            searchPlaceholder = stringResource(R.string.search_vocabulary),
             onQueryChange = viewModel::setQuery,
             onSelectLanguage = viewModel::selectLanguage,
             onSelectCategory = viewModel::selectCategory,
@@ -64,8 +67,8 @@ fun VocabularyLibraryScreen(
             empty = { modifier ->
                 EmptyLibrary(
                     icon = Icons.Outlined.Translate,
-                    title = "Your vocabulary is empty",
-                    text = "Tap + to add your first word, with its meaning, furigana, notes and example sentences.",
+                    title = stringResource(R.string.vocabulary_empty),
+                    text = stringResource(R.string.vocabulary_empty_detail),
                     modifier = modifier,
                 )
             },
@@ -112,7 +115,7 @@ private fun VocabularyCard(entry: VocabularyEntry, onClick: () -> Unit) {
             }
             if (entry.examples.isNotEmpty()) {
                 Text(
-                    text = if (entry.examples.size == 1) "1 example" else "${entry.examples.size} examples",
+                    text = pluralStringResource(R.plurals.grammar_examples, entry.examples.size, entry.examples.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

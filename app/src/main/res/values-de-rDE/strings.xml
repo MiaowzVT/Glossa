@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glossa</string>
+
+    <!-- Community: shared -->
+    <string name="community_back">Zurück</string>
+    <string name="community_dismiss">Schließen</string>
+    <string name="community_error_title">Synchronisation fehlgeschlagen</string>
+    <string name="community_error_network">Der Server konnte nicht erreicht werden. Bist du offline? Ziehe, um es erneut zu versuchen.</string>
+    <string name="community_error_server">Der Server lieferte eine fehlerhafte Antwort. Versuche es später erneut.</string>
+    <string name="community_error_invalid_data">Der Server sendete Daten, die Glossa nicht versteht.</string>
+
+    <!-- Community: overview -->
+    <string name="community_overview_title">Community</string>
+    <string name="community_official_sets_card_title">Offizielle Lernsets</string>
+    <string name="community_official_sets_card_text">Lies und lade offizielle Lernsets herunter - kuratiert und effektiv</string>
+    <string name="community_sets_card_title">Community Sets</string>
+    <string name="community_sets_card_text">Sets, die von der Community erstellt werden - Alles, was du benötigst, jederzeit.</string>
+
+    <!-- Community: official sets (course list) -->
+    <string name="community_official_sets_title">Offizielle Lernsets</string>
+    <string name="community_official_sets_empty_title">Noch keine offiziellen Lernsets.</string>
+    <string name="community_official_sets_empty_text">Neue Kurse werden hier angezeigt. Ziehe, um erneut zu prüfen.</string>
+    <string name="community_official_sets_error_title">Konnte Kurse nicht laden.</string>
+    <string name="community_course_language_unknown">Andere</string>
+
+    <!-- Community: lecture list -->
+    <string name="community_lectures_header">Lektionen</string>
+    <plurals name="community_lecture_count">
+        <item quantity="one">%d Lektion</item>
+        <item quantity="other">%d Lektionen</item>
+    </plurals>
+    <string name="community_lecture_number">Lektion %d</string>
+    <string name="community_lectures_empty_title">Noch keine Lektionen.</string>
+    <string name="community_lectures_empty_text">Dieser Kurs hat noch keine Lektionen. Ziehe, um erneut zu prüfen.</string>
+    <string name="community_lectures_error_title">Konnte die Lektionen nicht laden.</string>
+    <string name="community_course_not_found_title">Kurs nicht verfügbar</string>
+    <string name="community_course_not_found_text">Dieser Kurs wurde entfernt. Kehre zurück, um alle offiziellen Kurse zu sehen..</string>
+
+    <!-- Community: lecture detail -->
+    <string name="community_lecture_not_found">Diese Lektion ist nicht mehr verfügbar.</string>
+    <string name="community_lecture_empty_contents">Diese Lektion hat noch keinen Inhalt.</string>
+
+    <!-- CategoryPicker.kt -->
+    <string name="picker_label_language">Sprache</string>
+    <string name="picker_placeholder_languages_empty">Füge deine erste Sprache hinzu</string>
+    <string name="picker_placeholder_languages_filled">Wähle eine Sprache</string>
+    <string name="picker_add_label">Neue Sprache...</string>
+    <string name="picker_label_category">Kategorie</string>
+    <string name="picker_category_selected_text_fallback">Keine</string>
+    <string name="picker_label_category_none">Keine</string>
+    <string name="picker_label_category_add">Neue Kategorie...</string>
+    <string name="name_dialog_title_new_language">Neue Sprache</string>
+    <string name="name_dialog_label_new_language">Sprache</string>
+    <string name="name_dialog_placeholder_new_language">z.B. Japanisch</string>
+    <string name="name_dialog_title_new_category">Neue Kategorie</string>
+    <string name="name_dialog_label_new_category">Kategorie</string>
+    <string name="name_dialog_placeholder_new_category">z.B. Partikel</string>
+    <string name="name_dialog_confirm_button">Hinzufügen</string>
+    <string name="name_dialog_dismiss_button">Abbrechen</string>
+
+
+    <!-- Examples.kt -->
+    <string name="remove_example_content_description">Beispiel %d löschen</string>
+    <string name="rich_text_sentence_placeholder">Satz</string>
+    <string name="rich_text_translation_note_placeholder">Übersetzung oder Notizen (Optional)</string>
+    <string name="text_examples">Beispiele</string>
+    <string name="example_num">Beispiel %d</string>
+
+    <!-- LibraryList.kt -->
+    <string name="no_entries_match_filters">Keine Einträge entsprechen deinen Filtern.</string>
+    <string name="clear_search">Suche löschen</string>
+    <string name="all_languages">Alle Sprachen</string>
+    <string name="all_categories">Alle Kategorien</string>
+
+    <!-- GrammarDetailScreen.kt -->
+    <string name="back">Zurück</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="delete">Löschen</string>
+    <string name="delete_entry_confirmation">Eintrag löschen?</string>
+    <string name="delete_entry_confirmation_detail">Dieser Eintrag und seine Beispielsätze werden permanent gelöscht.</string>
+    <string name="cancel">Abbrechen</string>
+
+    <!-- GrammarEditorScreen.kt -->
+    <string name="new_entry">Neuer Eintrag</string>
+    <string name="edit_entry">Eintrag bearbeiten</string>
+    <string name="close">Schließen</string>
+    <string name="preview">Vorschau</string>
+    <string name="save">Speichern</string>
+    <string name="title">Titel</string>
+    <string name="title_example_placeholder">z.B. 〜{間|あいだ}に</string>
+    <string name="furigana_button_title">ふ</string>
+    <string name="description">Beschreibung</string>
+    <string name="grammar_description_placeholder">Erkläre die Grammatik...</string>
+    <string name="furigana_tip">Tip: Wähle Text und klicke auf ふ, um Furigana hinzuzufügen, oder schreibe {漢字|かんじ}.</string>
+    <string name="example_sentences">Beispielsätze</string>
+    <string name="add_example">Beispiel hinzufügen</string>
+    <string name="discard_changes_confirmation">Änderungen verwerfen?</string>
+    <string name="discard_changes_confirmation_detail">Deine ungespeicherten Änderungen an diesem Eintrag werden verloren gehen.</string>
+    <string name="discard">Verwerfen</string>
+    <string name="keep_editing">Weiter bearbeiten</string>
+    <string name="untitled">Unbenannt</string>
+
+    <!-- GrammarLibraryScreen.kt -->
+    <string name="grammar_library">Grammatikbibliothek</string>
+    <string name="add_grammar_entry">Grammatikeintrag hinzufügen</string>
+    <string name="search_grammar">Grammatik suchen</string>
+    <string name="grammar_library_empty">Deine Grammatikbibliothek ist leer.</string>
+    <string name="grammar_library_empty_detail">Drücke auf + um deinen ersten Grammatikeintrag zu erstellen, mit Formatierung, Furigana und Beispielsätzen.</string>
+    <plurals name="grammar_examples">
+        <item quantity="one">%d Beispiel</item>
+        <item quantity="other">%d Beispiele</item>
+    </plurals>
+
+    <!-- GrammarEditorViewModel.kt -->
+    <string name="error_title_required">Gebe einen Titel ein</string>
+    <string name="error_language_required">Gebe eine Sprache ein</string>
+
+    <!-- HomeScreen.kt -->
+    <string name="repitition">Wiederholung</string>
+    <string name="due_count_0">Alles wiederholt. Komme später zurück!</string>
+    <string name="due_count_1">1 Vokabel ausstehend</string>
+    <string name="due_count_n">%d Vokabeln ausstehend</string>
+    <string name="start_repitition">Wiederholung starten</string>
+
+    <!-- GlossaNavHost.kt -->
+    <string name="home">Home</string>
+    <string name="grammar">Grammatik</string>
+    <string name="community">Community</string>
+
+    <!-- ReviewScreen.kt -->
+    <string name="cards_left">Wiederholung · %d übrig</string>
+    <string name="end_session">Session beenden</string>
+    <string name="did_you_know_it">Wusstest du es?</string>
+    <string name="tap_to_reveal">Tippe auf die Karte, um die Bedeutung anzuzeigen</string>
+    <string name="wrong">Falsch</string>
+    <string name="correct">Korrekt</string>
+    <string name="incorrect">Falsch</string>
+    <string name="second_try">zweiter Versuch</string>
+    <string name="summary_percent_correct">%d richtig</string>
+    <string name="time_spent">Vergangene Zeit</string>
+    <string name="correct_answers">Korrekte Antworten</string>
+    <string name="done">Fertig</string>
+    <string name="all_caught_up">Alles widerholt!</string>
+    <string name="all_caught_up_detail">Derzeit musst du keine Vokabeln wiederholen. Komme später zurück!</string>
+    <string name="perfect">Perfekt!</string>
+    <string name="all_perfect">Alle Antworten waren richtig! Hervorragende Leistung!</string>
+    <string name="excellent_work">Exzellente Leistung!</string>
+    <string name="excellent_work_detail">Dein Gedächtnis ist in top Form! Weiter so!</string>
+    <string name="well_done">Gut gemacht!</string>
+    <string name="well_done_detail">Solider Fortschritt. Jede Session hilft dir, dich an diese Wörter zu erinnern!</string>
+    <string name="keep_going">Gib nicht auf!</string>
+    <string name="keep_going_detail">Lernen dauert seine Zeit. Die Wörter, an denen du scheiterst, kommen bald zurück, und du wirst sie besser kennen!</string>
+    <string name="dont_give_up">Gib nicht auf!</string>
+    <string name="dont_give_up_detail">Fehler helfen deinem Hirn zu lernen. Jede Session zählt!</string>
+
+    <!-- VocabularyDetailScreen -->
+    <string name="entry_no_longer_exists">Dieser Eintrag existiert nicht mehr.</string>
+    <string name="delete_entry_examples_confirmation">Dieser Eintrag und seine Beispielsätze werden permanent gelöscht.</string>
+    <string name="new_word">Neues Wort</string>
+    <string name="edit_word">Wort bearbeiten</string>
+    <string name="word_or_phrase">Wort oder Phrase</string>
+    <string name="word_or_phrase_placeholder">z.B. {勉強|べんきょう}</string>
+    <string name="meaning">Bedeutung</string>
+    <string name="meaning_placeholder">z.B. lernen</string>
+    <string name="notes">Notizen</string>
+    <string name="notes_placeholder">Nutzung, verwandte Wörter, ...</string>
+    <string name="unsaved_changes_lost">Deine ungespeicherten Änderungen gehen verloren.</string>
+
+    <!-- VocabularyLibaryScreen.kt-->
+    <string name="vocabulary">Vokabeln</string>
+    <string name="add_vocabulary_entry">Vokabel hinzufügen</string>
+    <string name="search_vocabulary">Vokabeln suchen</string>
+    <string name="vocabulary_empty">Du hast noch keine Vokabeln.</string>
+    <string name="vocabulary_empty_detail">Tippe auf +, um dein erstes Wort, mit Bedeutung, Furigana, Notizen und Beispielsätzen, hinzuzufügen.</string>
+
+    <!-- VocabularyEditorViewModel.kt -->
+    <string name="error_enter_word_or_phrase">Gebe ein Wort oder eine Phrase ein.</string>
+</resources>

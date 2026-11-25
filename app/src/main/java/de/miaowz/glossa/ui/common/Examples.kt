@@ -19,9 +19,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.model.ExampleSentence
 import de.miaowz.glossa.richtext.RichText
 import de.miaowz.glossa.richtext.RichTextEditorState
@@ -61,26 +63,26 @@ fun ExampleEditor(
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Example ${index + 1}",
+                    stringResource(R.string.example_num, index + 1),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onRemove) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Remove example ${index + 1}")
+                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.remove_example_content_description, index + 1))
                 }
             }
             RichTextField(
                 value = example.sentence,
                 onValueChange = onSentenceChange,
                 state = rememberRegisteredEditor(editors),
-                placeholder = "Sentence",
+                placeholder = stringResource(R.string.rich_text_sentence_placeholder),
                 minLines = 2,
             )
             RichTextField(
                 value = example.translation,
                 onValueChange = onTranslationChange,
                 state = rememberRegisteredEditor(editors),
-                placeholder = "Translation or note (optional)",
+                placeholder = stringResource(R.string.rich_text_translation_note_placeholder),
             )
         }
     }
@@ -92,7 +94,7 @@ fun ExamplesSection(examples: List<ExampleSentence>) {
     if (examples.isEmpty()) return
     HorizontalDivider()
     Text(
-        "Examples",
+        stringResource(R.string.text_examples),
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
     )

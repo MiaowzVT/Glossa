@@ -21,11 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import de.miaowz.glossa.R
 import de.miaowz.glossa.data.VocabularyRepository
 import de.miaowz.glossa.ui.vocabularyRepository
 import kotlinx.coroutines.flow.SharingStarted
@@ -53,7 +55,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Glossa") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -73,13 +75,13 @@ private fun ReviewCard(state: HomeUiState, onStartReview: () -> Unit) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Repetition", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.repitition), style = MaterialTheme.typography.titleMedium)
                     Text(
                         when {
                             due == null -> ""
-                            due == 0 -> "All caught up. Come back later!"
-                            due == 1 -> "vocabulary card due"
-                            else -> "vocabulary cards due"
+                            due == 0 -> stringResource(R.string.due_count_0)
+                            due == 1 -> stringResource(R.string.due_count_1)
+                            else -> stringResource(R.string.due_count_n, due)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -88,7 +90,7 @@ private fun ReviewCard(state: HomeUiState, onStartReview: () -> Unit) {
             }
             Button(onClick = onStartReview, enabled = (due ?: 0) > 0, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.PlayArrow, contentDescription = null)
-                Text("Start repetition", Modifier.padding(start = 8.dp))
+                Text(stringResource(R.string.start_repitition), Modifier.padding(start = 8.dp))
             }
         }
     }
