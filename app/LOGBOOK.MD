@@ -203,14 +203,3 @@ and record larger recommendations in a review note.
   is still running.
 - Tests: `OfficialCourseApiTest` covers 404 → `null` and 500 → `ResponseException` for the single-course endpoint.
 - ARCHITECTURE §4.6: endpoint table mentions the 404 case.
-
-### Pull Request: Modernize official courses and lecture list UI (Commit: b792595)
-
-**Prompt**: <br>
-Modernize official courses and lecture list UI.
-
-**Changes**: <br>
-
-- Refined the official course cards and lecture list presentation.
-- During the merge with `master`, retained its newer localized course and lecture screens, which include
-  the same presentation improvements alongside lecture details and shared loading/error states.
