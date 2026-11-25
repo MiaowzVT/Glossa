@@ -1,5 +1,6 @@
 package de.miaowz.glossa.ui.community.impl.lecture_list
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,13 +9,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.createSavedStateHandle
@@ -46,6 +53,7 @@ import de.miaowz.glossa.ui.community.SyncErrorCard
 import de.miaowz.glossa.ui.navigation.OfficialSetLectureListRoute
 import de.miaowz.glossa.ui.officialCourseLectureRepository
 import de.miaowz.glossa.ui.officialCourseRepository
+import de.miaowz.glossa.ui.theme.GlossaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,9 +94,14 @@ fun OfficialSetLectureListScreen(
             val error = state.error
             when {
                 state.isLoading || (course == null && state.isRefreshing) ->
-                    Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 course == null && error != null ->
-                    CommunityErrorMessage(stringResource(R.string.community_lectures_error_title), error)
+                    CommunityErrorMessage(
+                        stringResource(R.string.community_lectures_error_title),
+                        error,
+                    )
                 course == null -> CommunityMessage(
                     icon = Icons.Outlined.School,
                     title = stringResource(R.string.community_course_not_found_title),
@@ -96,15 +109,19 @@ fun OfficialSetLectureListScreen(
                 )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 16.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     if (error != null) {
-                        item(key = "error") { SyncErrorCard(error, onDismiss = viewModel::dismissError) }
+                        item(key = "error") {
+                            SyncErrorCard(error, onDismiss = viewModel::dismissError)
+                        }
                     }
                     item(key = "course") {
-                        // No "0 lectures" while the first sync of this course is still running.
-                        val count = state.lectures.size.takeUnless { it == 0 && state.isRefreshing }
+                        // Avoid showing "0 lectures" while the first sync is running.
+                        val count = state.lectures.size.takeUnless {
+                            it == 0 && state.isRefreshing
+                        }
                         CourseHeader(course, count)
                     }
                     item(key = "lectures-header") {
@@ -112,14 +129,23 @@ fun OfficialSetLectureListScreen(
                             text = stringResource(R.string.community_lectures_header),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp),
+                            modifier = Modifier.padding(
+                                start = 16.dp, top = 12.dp, end = 16.dp,
+                            ),
                         )
                     }
                     if (state.lectures.isEmpty() && !state.isRefreshing) {
                         item(key = "no-lectures") { NoLectures() }
                     }
-                    itemsIndexed(state.lectures, key = { _, lecture -> lecture.id }) { index, lecture ->
-                        LectureCard(index + 1, lecture, onClick = { onOpenLecture(lecture.id) })
+                    itemsIndexed(
+                        state.lectures,
+                        key = { _, lecture -> lecture.id },
+                    ) { index, lecture ->
+                        LectureCard(
+                            number = index + 1,
+                            lecture = lecture,
+                            onClick = { onOpenLecture(lecture.id) },
+                        )
                     }
                 }
             }
@@ -127,7 +153,7 @@ fun OfficialSetLectureListScreen(
     }
 }
 
-/** Same layout as the vocabulary detail screen's header. */
+/** Same course information as before; only lecture cards receive a new visual style. */
 @Composable
 private fun CourseHeader(course: OfficialCourse, lectureCount: Int?) {
     Column(
@@ -136,15 +162,26 @@ private fun CourseHeader(course: OfficialCourse, lectureCount: Int?) {
     ) {
         RubyText(text = course.name, style = MaterialTheme.typography.headlineMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (course.language.isNotBlank()) AssistChip(onClick = {}, label = { Text(course.language) })
-            if (course.level.isNotBlank()) AssistChip(onClick = {}, label = { Text(course.level) })
+            if (course.language.isNotBlank()) {
+                AssistChip(onClick = {}, label = { Text(course.language) })
+            }
+            if (course.level.isNotBlank()) {
+                AssistChip(onClick = {}, label = { Text(course.level) })
+            }
         }
         if (course.description.isNotBlank()) {
-            RubyText(text = course.description, style = MaterialTheme.typography.bodyLarge)
+            RubyText(
+                text = course.description,
+                style = MaterialTheme.typography.bodyLarge,
+            )
         }
         if (lectureCount != null) {
             Text(
-                text = pluralStringResource(R.plurals.community_lecture_count, lectureCount, lectureCount),
+                text = pluralStringResource(
+                    R.plurals.community_lecture_count,
+                    lectureCount,
+                    lectureCount,
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -159,13 +196,13 @@ private fun NoLectures() {
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            stringResource(R.string.community_lectures_empty_title),
+            text = stringResource(R.string.community_lectures_empty_title),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            stringResource(R.string.community_lectures_empty_text),
+            text = stringResource(R.string.community_lectures_empty_text),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -176,22 +213,92 @@ private fun NoLectures() {
 
 @Composable
 private fun LectureCard(number: Int, lecture: OfficialLecture, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = stringResource(R.string.community_lecture_number, number),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    LectureCardContent(
+        number = number,
+        name = {
             RubyText(
                 text = lecture.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
             )
+        },
+        onClick = onClick,
+    )
+}
+
+/** Visual-only card content: the real screen still uses OfficialLecture and RubyText. */
+@Composable
+private fun LectureCardContent(
+    number: Int,
+    name: @Composable () -> Unit,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(14.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = number.toString().padStart(2, '0'),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.community_lecture_number, number),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                name()
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Official lecture card")
+@Composable
+private fun LectureCardPreview() {
+    GlossaTheme(dynamicColor = false) {
+        LectureCardContent(
+            number = 1,
+            name = {
+                Text(
+                    text = "Introduction to Japanese",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            },
+            onClick = {},
+        )
     }
 }
