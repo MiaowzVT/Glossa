@@ -135,7 +135,7 @@
     <string name="correct">Correct</string>
     <string name="incorrect">Incorrect</string>
     <string name="second_try">second try</string>
-    <string name="summary_percent_correct">%d correct</string>
+    <string name="summary_percent_correct">%d %%</string>
     <string name="time_spent">Time spent</string>
     <string name="correct_answers">Correct answers</string>
     <string name="done">Done</string>

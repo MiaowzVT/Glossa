@@ -137,7 +137,7 @@
     <string name="correct">Korrekt</string>
     <string name="incorrect">Falsch</string>
     <string name="second_try">zweiter Versuch</string>
-    <string name="summary_percent_correct">%d richtig</string>
+    <string name="summary_percent_correct">%d %%</string>
     <string name="time_spent">Vergangene Zeit</string>
     <string name="correct_answers">Korrekte Antworten</string>
     <string name="done">Fertig</string>
