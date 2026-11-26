@@ -1,5 +1,12 @@
 # AI Usage - Logbook
 
+## Setup
+
+We used Android Studio with CLAUDE Code in the terminal for any AI-assisted changes. Reason for this being that by using Claude Code in the terminal, we can give Claude full access to the entire codebase, so that it can acquire the necessary context, but also directly modify the codebase based on the rules defined in @CLAUDE.md and @ARCHITECTURE.md.
+Development happened mixed on Windows and Arch Linux. Testing was done initially on a real phone (Samsung Galaxy S22), later on tests were mostly done in the emulator.
+The used model for AI-assisted tasks was in all cases Claude Opus 5.5 on high effort.
+The rules for AI-changes: The changed code has to be read and understood. No commits of code that can't be explained.
+
 ## October 30th, 2026 (Commit: b4ac917)
 
 ### First Prompt
@@ -190,7 +197,7 @@ reachable from the work laptop (no live test). Write a plan, review it criticall
 **Reflection**:
 
 Claude did a good job. Server responses get handled cleanly with proper error handling. The Data Layer and the DTOs are chosen appropriately. The UI implementation is basic, yet well-working with a good sense of putting UI logic into their own UI-component functions.
-Also reflected not using hardcoded strings, which is a big plus. 
+Also reflected not using hardcoded strings, which is a big plus.
 
 ### Review (scheduled review task, branch `dev`)
 
