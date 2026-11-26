@@ -20,8 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import de.miaowz.glossa.R
 
 /**
  * Asks for the reading of [initialBase] (usually the selected text) and returns
@@ -45,14 +47,14 @@ fun FuriganaDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add furigana") },
+        title = { Text(stringResource(R.string.add_furigana)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = base,
                     onValueChange = { base = it },
-                    label = { Text("Text") },
-                    placeholder = { Text("漢字") },
+                    label = { Text(stringResource(R.string.text)) },
+                    placeholder = { Text(stringResource(R.string.kanji)) },
                     singleLine = true,
                     isError = base.isNotEmpty() && !RubyMarkup.isValidPart(base),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -61,17 +63,17 @@ fun FuriganaDialog(
                 OutlinedTextField(
                     value = reading,
                     onValueChange = { reading = it },
-                    label = { Text("Reading") },
-                    placeholder = { Text("かんじ") },
+                    label = { Text(stringResource(R.string.reading)) },
+                    placeholder = { Text(stringResource(R.string.kanji_hiragana)) },
                     singleLine = true,
                     isError = reading.isNotEmpty() && !RubyMarkup.isValidPart(reading),
-                    supportingText = { Text("The characters { } | are not allowed") },
+                    supportingText = { Text(stringResource(R.string.disallowed_characters)) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { if (isValid) onConfirm(base, reading.trim()) }),
                     modifier = Modifier.fillMaxWidth().focusRequester(readingFocus),
                 )
                 if (isValid) {
-                    Text("Preview", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.preview), style = MaterialTheme.typography.labelMedium)
                     RubyText(
                         text = RubyMarkup.format(base, reading.trim()),
                         style = MaterialTheme.typography.headlineSmall,
@@ -81,11 +83,11 @@ fun FuriganaDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(base, reading.trim()) }, enabled = isValid) {
-                Text("Add")
+                Text(stringResource(R.string.add))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

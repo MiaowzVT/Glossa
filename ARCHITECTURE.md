@@ -28,6 +28,7 @@ stated otherwise.
 | Serialization  | kotlinx.serialization JSON (routes, `RichText` storage, backend DTOs)  |
 | Networking     | Ktor client 3.6 (OkHttp engine), bodies decoded as text (§4.6)         |
 | DI             | **None** — manual container in `GlossaApplication`                    |
+| Logging        | Timber 5: all levels in debug builds, info and above in release (§3)   |
 | SDK            | `minSdk 35`, `targetSdk/compileSdk 37`                                  |
 | Build          | AGP 9.4, version catalog `gradle/libs.versions.toml`, configuration cache on |
 
@@ -80,7 +81,7 @@ Dependency rules (keep these when adding code):
 
 | File | Role |
 |------|------|
-| `GlossaApplication.kt` | Manual dependency container. Holds one `database` and `grammarRepository` / `vocabularyRepository` / `officialCourseRepository` / `officialCourseLectureRepository`, all `lazy` (so tests/previews don't open the DB). The Ktor `httpClient` is a top-level `val` in `network/HttpClient.kt`. |
+| `GlossaApplication.kt` | Plants Timber's `DebugTree` (debug builds) or `ReleaseTree` (release: info and above) and logs the app version. Manual dependency container. Holds one `database` and `grammarRepository` / `vocabularyRepository` / `officialCourseRepository` / `officialCourseLectureRepository`, all `lazy` (so tests/previews don't open the DB). The Ktor `httpClient` is a top-level `val` in `network/HttpClient.kt`. |
 | `MainActivity.kt` | `enableEdgeToEdge()`, `GlossaTheme { GlossaNavHost() }`. `windowSoftInputMode="adjustResize"` in the manifest. |
 | `ui/GlossaViewModelFactory.kt` | `CreationExtras.grammarRepository` / `.vocabularyRepository` / `.officialCourseRepository` / `.officialCourseLectureRepository` extensions — the *only* bridge from ViewModels to the container. |
 
@@ -95,6 +96,26 @@ viewModel: GrammarEditorViewModel = viewModel {
 **Adding a new app-wide dependency:** add a `lazy` property to `GlossaApplication` and a matching
 `CreationExtras.<name>` extension in `ui/GlossaViewModelFactory.kt`. Do not introduce Hilt/Koin
 without a deliberate decision — the pattern is meant to stay this small.
+
+**Logging:** use `Timber`, never `android.util.Log`. Debug builds log every level; release builds
+keep **info, warn and error** in Logcat for troubleshooting (`ReleaseTree`, tags = calling class)
+and drop debug. JVM tests plant no tree, so Timber calls are no-ops there and code that logs stays
+JVM-testable (`android.util.Log` throws "not mocked" in unit tests). Pick the level by severity:
+
+| Level | Meaning | Examples |
+|-------|---------|----------|
+| `e` | Broken, needs a fix; always with the throwable | backend 4xx/5xx or unreadable data (`SyncError.Server` / `InvalidData` via `SyncError.log`) |
+| `w` | Handled, but degraded or unexpected | offline (`SyncError.Network`), undecodable `RichText` JSON, dropped spans, unparsable backend timestamps, foreign lectures ignored |
+| `i` | Important state changes (one line per user action or sync) | app start + version, entry saved/deleted, "Synced n courses/lectures", course removed on the backend |
+| `d` | Development details, not in release | Ktor request lines (tag `Ktor`), FSRS rescheduling in `VocabularyRepository.review` |
+
+- Release logs are readable with `adb logcat`, so: **ids and counts only, no user content**
+  (titles, notes, meanings) at any level. Exception messages that quote user input are cut to their
+  first line (see `RichText.decode`).
+- Map sync failures with `syncErrorOf` *before* logging (`.also { it.log(e, "...") }`), so
+  cancellation is rethrown, not logged.
+- **No logging in composables** or per-keystroke/per-frame code (`FormattingWatcher`, `RubySpan`,
+  `libraryState`); log in repositories/APIs/ViewModels, not in DAOs.
 
 ---
 
@@ -252,7 +273,9 @@ Invariants:
   replaces that course's lectures. Repositories map entities to `OfficialCourse` /
   `OfficialLecture` (`RichText.decode` for contents). Everything stays readable offline.
 - Tests and the app share `HttpClientConfig.glossaDefaults()` (base URL, `expectSuccess`), so a
-  `MockEngine` client behaves like the real one.
+  `MockEngine` client behaves like the real one. Ktor's `Logging` plugin (request line + status,
+  no bodies) logs via Timber at debug level (tag `Ktor`), so only in debug builds; failures are
+  logged by the ViewModels with their severity (`SyncError.log`).
 - Android 17 (API 37) needs the runtime permission `ACCESS_LOCAL_NETWORK` for LAN/emulator hosts;
   `CommunityOverviewScreen` requests it.
 
@@ -558,8 +581,8 @@ Commands (from the repo root):
 Guidelines: pure Kotlin logic (parsing, filtering, mapping) → JVM tests; anything using
 `android.text.*` or Room → `androidTest`. Networking code is tested on the JVM with
 `ktor-client-mock` (`MockBackend` in `app/src/test/…/network/`); ViewModels with
-`kotlinx-coroutines-test` and `MainDispatcherRule` — keep `android.util.Log` out of ViewModels so
-they run on the JVM. Repository tests use
+`kotlinx-coroutines-test` and `MainDispatcherRule` — log with Timber, never `android.util.Log`, so
+they run on the JVM (§3). Repository tests use
 `Room.inMemoryDatabaseBuilder` and the injectable `clock`. There are no Compose UI or migration tests yet, and ViewModel tests only for `ui/community` (a `MigrationTestHelper` test would need the `room-testing` dependency and the
 schemas as androidTest assets).
 
@@ -644,5 +667,9 @@ sorting and search.
   parameters are the defaults (not optimized from `vocabulary_review_logs`), and the session is not
   restored after process death (answers already given are saved). Grammar has no repetition yet;
   the review UI and `ReviewSession` are generic enough to reuse.
+- Release logs (info and above) go to Logcat only: there is no crash reporting or remote log
+  collection, so troubleshooting needs `adb logcat` on the device. Write failures in
+  `ReviewViewModel.answer` and the editors' `save()` / detail `delete()` are not caught (they crash);
+  proper error handling there would be the place for an error log.
 - `app/LOGBOOK.MD` is the AI-usage logbook (prompt + summary of changes per session). Append an
   entry there when making AI-assisted changes.

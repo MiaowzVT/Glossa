@@ -1,6 +1,7 @@
 package de.miaowz.glossa.data.dto
 
 import de.miaowz.glossa.data.db.OfficialCourseLectureEntity
+import de.miaowz.glossa.util.parseBackendTimestamp
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

@@ -6,6 +6,7 @@ import de.miaowz.glossa.data.model.OfficialCourse
 import de.miaowz.glossa.network.repository.OfficialCourseRepository
 import de.miaowz.glossa.ruby.RubyMarkup
 import de.miaowz.glossa.ui.community.SyncError
+import de.miaowz.glossa.ui.community.log
 import de.miaowz.glossa.ui.community.syncErrorOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -71,7 +72,8 @@ class OfficialSetsViewModel(
             try {
                 repository.refresh()
             } catch (e: Exception) {
-                error.value = syncErrorOf(e)
+                // syncErrorOf rethrows cancellation, so only real failures are logged.
+                error.value = syncErrorOf(e).also { it.log(e, "Syncing courses") }
             } finally {
                 isRefreshing.value = false
             }

@@ -176,4 +176,13 @@
 
     <!-- VocabularyEditorViewModel.kt -->
     <string name="error_enter_word_or_phrase">Gebe ein Wort oder eine Phrase ein.</string>
+
+    <!-- FuriganaDialog.kt -->
+    <string name="add_furigana">Furigana hinzufügen</string>
+    <string name="text">Text</string>
+    <string name="kanji">漢字</string>
+    <string name="reading">Lesung</string>
+    <string name="kanji_hiragana">かんじ</string>
+    <string name="disallowed_characters">Die Zeichen { } | sind verboten.</string>
+    <string name="add">Hinzufügen</string>
 </resources>

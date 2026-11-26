@@ -15,12 +15,3 @@ data class OfficialCourse(
     val language: String,
     val updatedAt: Long,
 )
-
-/** A lecture of an [OfficialCourse]; [name] may contain ruby markup. */
-data class OfficialLecture(
-    val id: Long,
-    val courseId: Long,
-    val name: String,
-    val contents: RichText,
-    val updatedAt: Long,
-)

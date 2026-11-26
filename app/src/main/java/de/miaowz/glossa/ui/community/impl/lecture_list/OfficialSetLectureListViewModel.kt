@@ -7,6 +7,7 @@ import de.miaowz.glossa.data.model.OfficialLecture
 import de.miaowz.glossa.network.repository.OfficialCourseLectureRepository
 import de.miaowz.glossa.network.repository.OfficialCourseRepository
 import de.miaowz.glossa.ui.community.SyncError
+import de.miaowz.glossa.ui.community.log
 import de.miaowz.glossa.ui.community.syncErrorOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -64,7 +65,8 @@ class OfficialSetLectureListViewModel(
                     lectureRepository.refreshLectures(courseId)
                 }
             } catch (e: Exception) {
-                error.value = syncErrorOf(e)
+                // syncErrorOf rethrows cancellation, so only real failures are logged.
+                error.value = syncErrorOf(e).also { it.log(e, "Syncing course $courseId") }
             } finally {
                 isRefreshing.value = false
             }

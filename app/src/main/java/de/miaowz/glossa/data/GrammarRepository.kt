@@ -13,6 +13,7 @@ import de.miaowz.glossa.richtext.RichText
 import de.miaowz.glossa.ruby.RubyMarkup
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 
 class GrammarRepository(
     private val dao: GrammarDao,
@@ -53,10 +54,15 @@ class GrammarRepository(
                     translation = it.translation.encode(),
                 )
             }
-        return dao.saveEntry(entry, examples)
+        return dao.saveEntry(entry, examples).also { id ->
+            Timber.i("Saved grammar entry %d (new=%b, %d examples)", id, draft.id == 0L, examples.size)
+        }
     }
 
-    suspend fun delete(id: Long) = dao.deleteEntry(id)
+    suspend fun delete(id: Long) {
+        dao.deleteEntry(id)
+        Timber.i("Deleted grammar entry %d", id)
+    }
 }
 
 private fun GrammarEntryWithDetails.toModel() = GrammarEntry(

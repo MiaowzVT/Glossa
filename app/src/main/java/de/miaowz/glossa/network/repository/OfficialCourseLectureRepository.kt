@@ -8,6 +8,7 @@ import de.miaowz.glossa.network.OfficialCourseLectureApi
 import de.miaowz.glossa.richtext.RichText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 
 /** Lectures of official courses, cached per course in Room (see [OfficialCourseRepository]). */
 class OfficialCourseLectureRepository(
@@ -23,7 +24,12 @@ class OfficialCourseLectureRepository(
     suspend fun refreshLectures(courseId: Long) {
         val remote = api.getLecturesForCourse(courseId)
         // The endpoint is per course, but don't trust rows of other courses to end up here.
-        dao.replaceLecturesForCourse(courseId, remote.filter { it.courseId == courseId }.map { it.toEntity() })
+        val lectures = remote.filter { it.courseId == courseId }
+        if (lectures.size != remote.size) {
+            Timber.w("Ignored %d lectures of other courses in the lectures of course %d", remote.size - lectures.size, courseId)
+        }
+        dao.replaceLecturesForCourse(courseId, lectures.map { it.toEntity() })
+        Timber.i("Synced %d lectures of course %d", lectures.size, courseId)
     }
 }
 

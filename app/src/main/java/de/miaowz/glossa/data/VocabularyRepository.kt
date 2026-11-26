@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
+import java.time.Instant
 import java.time.ZoneId
 
 class VocabularyRepository(
@@ -74,10 +76,15 @@ class VocabularyRepository(
                     translation = it.translation.encode(),
                 )
             }
-        return dao.saveEntry(entry, examples)
+        return dao.saveEntry(entry, examples).also { id ->
+            Timber.i("Saved vocabulary entry %d (new=%b, %d examples)", id, draft.id == 0L, examples.size)
+        }
     }
 
-    suspend fun delete(id: Long) = dao.deleteEntry(id)
+    suspend fun delete(id: Long) {
+        dao.deleteEntry(id)
+        Timber.i("Deleted vocabulary entry %d", id)
+    }
 
     /** Cards due now, see [VocabularyDao.getDueEntries] for the order. */
     suspend fun getDueEntries(): List<VocabularyEntry> = dao.getDueEntries(clock()).map { it.toModel() }
@@ -88,6 +95,11 @@ class VocabularyRepository(
         val previous = dao.getReviewState(entryId)?.toCardState()
         val next = fsrs.schedule(previous, rating, now, zone())
         dao.saveReview(next.toEntity(entryId), VocabularyReviewLogEntity(entryId = entryId, rating = rating, reviewedAt = now))
+        Timber.d(
+            "Reviewed card %d as %s: stability %.2f -> %.2f, difficulty %.2f -> %.2f, reps %d, lapses %d, due %s",
+            entryId, rating, previous?.stability ?: 0.0, next.stability, previous?.difficulty ?: 0.0, next.difficulty,
+            next.reps, next.lapses, Instant.ofEpochMilli(next.due),
+        )
     }
 
     private fun ticker(): Flow<Long> = flow {

@@ -1,6 +1,5 @@
 package de.miaowz.glossa.ui.navigation
 
-import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -45,8 +44,6 @@ import de.miaowz.glossa.ui.vocabulary.VocabularyDetailScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyEditorScreen
 import de.miaowz.glossa.ui.vocabulary.VocabularyLibraryScreen
 import kotlinx.serialization.Serializable
-
-private val TAG: String = "Glossa::GlossaNavHost"
 
 @Serializable
 data object HomeRoute
@@ -121,7 +118,6 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                             icon = { Icon(destination.icon, contentDescription = null) },
                             label = { Text(label) },
                         )
-                        Log.i(TAG, "Built NavigationBarItem for $label")
                     }
                 }
             }
@@ -200,9 +196,6 @@ fun GlossaNavHost(modifier: Modifier = Modifier) {
                             navController.navigate(OfficialSetsRoute) {}
                         }
                         CommunityScreenTarget.COMMUNITY_SETS_MAIN_PAGE -> {}
-                        else -> {
-                            Log.e(TAG, "Invalid target provided: $target")
-                        }
                     }
                 })
             }

@@ -1,5 +1,6 @@
 package de.miaowz.glossa.data.dto
 
+import de.miaowz.glossa.util.parseBackendTimestamp
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

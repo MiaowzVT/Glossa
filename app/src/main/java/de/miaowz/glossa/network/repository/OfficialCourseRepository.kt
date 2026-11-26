@@ -7,6 +7,7 @@ import de.miaowz.glossa.data.model.OfficialCourse
 import de.miaowz.glossa.network.OfficialCourseApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 
 /**
  * Official courses: Room is the source of truth for the UI (works offline), [refresh] and
@@ -25,6 +26,7 @@ class OfficialCourseRepository(
     suspend fun refresh() {
         val remote = api.getCourses()
         dao.replaceAll(remote.map { it.toEntity() })
+        Timber.i("Synced %d courses", remote.size)
     }
 
     /**

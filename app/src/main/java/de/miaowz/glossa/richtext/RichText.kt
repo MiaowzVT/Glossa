@@ -3,6 +3,7 @@ package de.miaowz.glossa.richtext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import timber.log.Timber
 
 /**
  * Platform-independent rich text: plain [text] plus formatting [spans] over character ranges.
@@ -32,7 +33,18 @@ data class RichText(
         fun decode(encoded: String): RichText {
             if (encoded.isEmpty()) return Empty
             return runCatching { json.decodeFromString(serializer(), encoded) }
-                .getOrElse { RichText(encoded) }
+                .getOrElse { e ->
+                    // Plain text is a supported input; JSON that fails to decode is corrupt or uses
+                    // a format this version does not know (e.g. a new SpanFormat from the admin panel).
+                    // Only the first line of the message: the rest quotes the input, i.e. user content.
+                    if (encoded.trimStart().startsWith('{')) {
+                        Timber.w(
+                            "Undecodable RichText JSON, showing it as plain text (%s: %s)",
+                            e::class.simpleName, e.message?.lineSequence()?.firstOrNull(),
+                        )
+                    }
+                    RichText(encoded)
+                }
                 .sanitized()
         }
     }
@@ -40,7 +52,9 @@ data class RichText(
     /** Drops spans that are empty or out of bounds, e.g. after manual database edits. */
     private fun sanitized(): RichText {
         val valid = spans.filter { it.start in 0 until it.end && it.end <= text.length }
-        return if (valid.size == spans.size) this else copy(spans = valid)
+        if (valid.size == spans.size) return this
+        Timber.w("Dropped %d invalid RichText spans", spans.size - valid.size)
+        return copy(spans = valid)
     }
 }
 

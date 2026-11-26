@@ -9,17 +9,23 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import timber.log.Timber
 
 const val BASE_URL = "http://10.0.2.2:8096/"
 
 val httpClient = HttpClient(OkHttp) {
     glossaDefaults()
     install(Logging) {
-        level = LogLevel.INFO          // logs every request/response in Logcat
+        level = LogLevel.INFO          // request line + response status, no bodies
+        // Debug level: failures are logged by the ViewModels with their severity (see SyncError.log).
+        logger = object : Logger {
+            override fun log(message: String) = Timber.tag("Ktor").d(message)
+        }
     }
     install(HttpTimeout) {
         connectTimeoutMillis = 10_000
@@ -48,10 +54,15 @@ class OfficialCourseApi(private val client: HttpClient) {
         val body = try {
             client.get("api/course/$courseId").bodyAsText()
         } catch (e: ClientRequestException) {
-            if (e.response.status == HttpStatusCode.NotFound) return null
+            if (e.response.status == HttpStatusCode.NotFound) {
+                Timber.i("Course %d not found on the backend (HTTP 404)", courseId)
+                return null
+            }
             throw e
         }
-        return OfficialCourseJson.decodeCourse(body)
+        return OfficialCourseJson.decodeCourse(body).also {
+            if (it == null) Timber.i("Course %d not found on the backend (empty body)", courseId)
+        }
     }
 }
 

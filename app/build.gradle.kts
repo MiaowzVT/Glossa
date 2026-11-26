@@ -36,6 +36,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -62,6 +63,7 @@ dependencies {
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.logging)
+    implementation(libs.timber)
     ksp(libs.androidx.room.compiler)
     implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)

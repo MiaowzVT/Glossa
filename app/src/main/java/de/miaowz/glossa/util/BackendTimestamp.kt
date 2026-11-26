@@ -1,5 +1,6 @@
-package de.miaowz.glossa.data.dto
+package de.miaowz.glossa.util
 
+import timber.log.Timber
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -15,5 +16,8 @@ internal fun parseBackendTimestamp(value: String?): Long {
         .recoverCatching {
             LocalDateTime.parse(value.trim().replace(' ', 'T')).toInstant(ZoneOffset.UTC).toEpochMilli()
         }
-        .getOrDefault(0L)
+        .getOrElse {
+            Timber.w("Unparsable backend timestamp '%s', using 0", value)
+            0L
+        }
 }
